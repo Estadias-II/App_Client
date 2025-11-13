@@ -1,6 +1,15 @@
+import { Routes, Route } from 'react-router-dom'
+import Login from './components/Login'
+
 function App() {
   return (
-    <div className='text-center text-4xl font-extrabold text-white m-20'>Aqui van a programar sus vistas</div>
+    <div className="">
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
+        {/* Agrega más rutas según necesites */}
+      </Routes>
+    </div>
   )
 }
 
