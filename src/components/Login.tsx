@@ -62,7 +62,7 @@ export default function Login() {
 
         <div className="flex flex-col">
           <label className="font-noto text-left text-[24px] ml-3 mb-2 font-bold text-[#BFBFBF]">
-            Ingrese su password:
+            Ingrese su contraseña:
           </label>
           <input 
             type="password" 
@@ -71,14 +71,14 @@ export default function Login() {
                 ? 'border-red-500 bg-red-50' 
                 : 'border-yellow-400 hover:bg-[#978F8F] hover:placeholder:text-white'
             }`}
-            placeholder="Password: Example"
+            placeholder="Contraseña: Example"
             {...register("password", { 
               required: true
             })}
           />
           {errors.password && (
             <span className="text-red-400 text-[18px] font-noto p-0 ml-3">
-              El campo password es obligatorio
+              El campo contraseña es obligatorio
             </span>
           )}
         </div>
