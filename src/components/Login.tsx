@@ -54,7 +54,7 @@ export default function Login() {
             })}
           />
           {errors.usuario && (
-            <span className="text-red-400 text-[18px] font-noto p-0">
+            <span className="text-red-400 text-[18px] font-noto p-0 ml-3">
               El campo usuario es obligatorio
             </span>
           )}
@@ -77,7 +77,7 @@ export default function Login() {
             })}
           />
           {errors.password && (
-            <span className="text-red-400 text-[18px] font-noto p-0">
+            <span className="text-red-400 text-[18px] font-noto p-0 ml-3">
               El campo password es obligatorio
             </span>
           )}
