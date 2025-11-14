@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import Login from './components/Login'
+import Register from './components/Register'
 
 function App() {
   return (
@@ -7,7 +8,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
-        {/* Agrega más rutas según necesites */}
+        <Route path="/registro" element={<Register />} />
       </Routes>
     </div>
   )

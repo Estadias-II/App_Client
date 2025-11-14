@@ -20,7 +20,7 @@ export default function Login() {
   };
 
   return (
-    <div className="flex items-center flex-col justify-center min-h-screen bg-gradient-to-r from-yellow-400 to-orange-500">
+    <div className="flex items-center flex-col py-12 min-h-screen bg-gradient-to-r from-yellow-400 to-orange-500">
       {/* Tarjeta negra centrada */}
       <form 
         onSubmit={handleSubmit(onSubmit)} 
@@ -33,9 +33,9 @@ export default function Login() {
           className="w-2/3 mx-auto mb-4"
         />
 
-        <h1 className="mt-6 mb-12 text-[40px] font-bold text-[#BFBFBF] text-center font-orbitron">
+        <h2 className="mt-6 mb-12 text-[40px] font-bold text-[#BFBFBF] text-center font-orbitron">
           Inicio de sesión
-        </h1>
+        </h2>
 
         <div className="flex flex-col mb-8">
           <label className="text-left text-[24px] ml-3 mb-2 font-bold text-[#BFBFBF] font-noto">
@@ -48,7 +48,7 @@ export default function Login() {
                 ? 'border-red-500 bg-red-50' 
                 : 'border-yellow-400 hover:bg-[#978F8F] hover:placeholder:text-white'
             }`}
-            placeholder="Usuario: Elin Blomkvist"
+            placeholder="Ej: elin_blomkvist"
             {...register("usuario", { 
               required: true
             })}
@@ -71,7 +71,7 @@ export default function Login() {
                 ? 'border-red-500 bg-red-50' 
                 : 'border-yellow-400 hover:bg-[#978F8F] hover:placeholder:text-white'
             }`}
-            placeholder="Contraseña: Example"
+            placeholder="Ej: 12345678"
             {...register("password", { 
               required: true
             })}
@@ -96,7 +96,7 @@ export default function Login() {
           <label className="text-[20px] text-[#BFBFBF] font-extralight">
             ¿No tienes una cuenta aún?
           </label>
-          <Link to={'/'} className="text-[20px] text-blue-500 hover:text-blue-600 transition-colors">
+          <Link to={'/registro'} className="text-[20px] text-blue-500 hover:text-blue-600 transition-colors">
             Registrarse
           </Link>
         </div>
