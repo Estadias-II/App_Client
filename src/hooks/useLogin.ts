@@ -12,7 +12,7 @@ export const useLogin = () => {
     try {
       const respuesta = await usuarioApi.login(data);
       
-      toast.success('🎊 ¡Inicio de sesión exitoso!', {
+      toast.success('¡Inicio de sesión exitoso!', {
         position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,

@@ -15,7 +15,7 @@ export const useRegistro = () => {
       
       const respuesta = await usuarioApi.registrar(datosParaEnviar);
       
-      toast.success('🎉 ¡Registro exitoso! Bienvenido a Kazoku Games', {
+      toast.success('¡Registro exitoso! Bienvenido a Kazoku Games', {
         position: "top-right",
         autoClose: 5000,
         hideProgressBar: false,

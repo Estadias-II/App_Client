@@ -21,12 +21,12 @@ export default function Login() {
 
   return (
     <div className="flex items-center flex-col py-12 min-h-screen bg-gradient-to-r from-yellow-400 to-orange-500">
-      {/* Tarjeta negra centrada */}
+      
       <form 
         onSubmit={handleSubmit(onSubmit)} 
         className="bg-black rounded-xl shadow-2xl w-2/6 px-20 py-10 text-white font-noto"
       >
-        {/* Logo */}
+        
         <img
           src={LogoEmpresa}
           alt="Logo Kazoku Games"
