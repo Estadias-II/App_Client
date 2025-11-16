@@ -1,6 +1,7 @@
 import LogoEmpresa from "../assets/LogoEmpresa.png";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
+import { useRegistro } from "../hooks/useRegistro";
 
 interface RegistroForm {
   nombres: string;
@@ -25,19 +26,19 @@ export default function Registro_Datos_Personales() {
 
   const contraseña = watch("contraseña");
 
-  const onSubmit = (data: RegistroForm) => {
-    console.log("Pruebas pasadas!");
-    console.log("Datos:", data);
+  const { registrarUsuario, loading } = useRegistro();
+  const onSubmit = async (data: RegistroForm) => {
+    await registrarUsuario(data);
   };
 
   return (
     <div className="flex items-center flex-col py-12 min-h-screen bg-gradient-to-r from-yellow-400 to-orange-500">
 
-      <form 
-        onSubmit={handleSubmit(onSubmit)} 
+      <form
+        onSubmit={handleSubmit(onSubmit)}
         className="bg-black rounded-xl shadow-2xl w-2/6 px-20 py-10 text-white font-noto"
       >
-  
+
         <img
           src={LogoEmpresa}
           alt="Logo Kazoku Games"
@@ -49,15 +50,14 @@ export default function Registro_Datos_Personales() {
 
           <div className="flex flex-col mb-8">
             <label className="text-left text-[24px] ml-3 mb-2 font-bold text-[#BFBFBF] font-noto">Nombre(s):</label>
-            <input 
-              type="text" 
-              className={`font-noto py-3 rounded-2xl placeholder:text-[#978F8F] text-black font-bold px-5 text-[22px] border-2 transition-colors ${
-                errors.nombres 
-                  ? 'border-red-500 bg-red-50' 
-                  : 'border-yellow-400 hover:bg-[#978F8F] hover:placeholder:text-white'
-              }`}
+            <input
+              type="text"
+              className={`font-noto py-3 rounded-2xl placeholder:text-[#978F8F] text-black font-bold px-5 text-[22px] border-2 transition-colors ${errors.nombres
+                ? 'border-red-500 bg-red-50'
+                : 'border-yellow-400 hover:bg-[#978F8F] hover:placeholder:text-white'
+                }`}
               placeholder="Ej: Juan Carlos"
-              {...register("nombres", { 
+              {...register("nombres", {
                 required: true,
                 minLength: 2
               })}
@@ -71,15 +71,14 @@ export default function Registro_Datos_Personales() {
 
           <div className="flex flex-col mb-8">
             <label className="font-noto text-left text-[24px] ml-3 mb-2 font-bold text-[#BFBFBF]">Apellido(s):</label>
-            <input 
-              type="text" 
-              className={`font-noto py-3 rounded-2xl placeholder:text-[#978F8F] text-black font-bold px-5 text-[22px] border-2 transition-colors ${
-                errors.apellidos 
-                  ? 'border-red-500 bg-red-50' 
-                  : 'border-yellow-400 hover:bg-[#978F8F] hover:placeholder:text-white'
-              }`}
+            <input
+              type="text"
+              className={`font-noto py-3 rounded-2xl placeholder:text-[#978F8F] text-black font-bold px-5 text-[22px] border-2 transition-colors ${errors.apellidos
+                ? 'border-red-500 bg-red-50'
+                : 'border-yellow-400 hover:bg-[#978F8F] hover:placeholder:text-white'
+                }`}
               placeholder="Ej: Pérez García"
-              {...register("apellidos", { 
+              {...register("apellidos", {
                 required: true,
                 minLength: 2
               })}
@@ -93,14 +92,13 @@ export default function Registro_Datos_Personales() {
 
           <div className="flex flex-col">
             <label className="font-noto text-left text-[24px] ml-3 mb-2 font-bold text-[#BFBFBF]">Fecha de nacimiento:</label>
-            <input 
-              type="date" 
-              className={`font-noto py-3 rounded-2xl placeholder:text-[#978F8F] text-black font-bold px-5 text-[22px] border-2 transition-colors ${
-                errors.fechaNacimiento 
-                  ? 'border-red-500 bg-red-50' 
-                  : 'border-yellow-400 hover:bg-[#978F8F] hover:placeholder:text-white'
-              }`}
-              {...register("fechaNacimiento", { 
+            <input
+              type="date"
+              className={`font-noto py-3 rounded-2xl placeholder:text-[#978F8F] text-black font-bold px-5 text-[22px] border-2 transition-colors ${errors.fechaNacimiento
+                ? 'border-red-500 bg-red-50'
+                : 'border-yellow-400 hover:bg-[#978F8F] hover:placeholder:text-white'
+                }`}
+              {...register("fechaNacimiento", {
                 required: true
               })}
             />
@@ -117,15 +115,14 @@ export default function Registro_Datos_Personales() {
 
           <div className="flex flex-col mb-8">
             <label className="text-left text-[24px] ml-3 mb-2 font-bold text-[#BFBFBF] font-noto">Correo electrónico:</label>
-            <input 
-              type="email" 
-              className={`font-noto py-3 rounded-2xl placeholder:text-[#978F8F] text-black font-bold px-5 text-[22px] border-2 transition-colors ${
-                errors.correo 
-                  ? 'border-red-500 bg-red-50' 
-                  : 'border-yellow-400 hover:bg-[#978F8F] hover:placeholder:text-white'
-              }`}
+            <input
+              type="email"
+              className={`font-noto py-3 rounded-2xl placeholder:text-[#978F8F] text-black font-bold px-5 text-[22px] border-2 transition-colors ${errors.correo
+                ? 'border-red-500 bg-red-50'
+                : 'border-yellow-400 hover:bg-[#978F8F] hover:placeholder:text-white'
+                }`}
               placeholder="Ej: usuario@correo.com"
-              {...register("correo", { 
+              {...register("correo", {
                 required: true,
                 pattern: {
                   value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
@@ -142,13 +139,12 @@ export default function Registro_Datos_Personales() {
 
           <div className="flex flex-col mb-8">
             <label className="font-noto text-left text-[24px] ml-3 mb-2 font-bold text-[#BFBFBF]">País:</label>
-            <select 
-              className={`font-noto py-3 rounded-2xl text-black font-bold px-5 text-[22px] border-2 transition-colors ${
-                errors.pais 
-                  ? 'border-red-500 bg-red-50' 
-                  : 'border-yellow-400 hover:bg-[#978F8F]'
-              }`}
-              {...register("pais", { 
+            <select
+              className={`font-noto py-3 rounded-2xl text-black font-bold px-5 text-[22px] border-2 transition-colors ${errors.pais
+                ? 'border-red-500 bg-red-50'
+                : 'border-yellow-400 hover:bg-[#978F8F]'
+                }`}
+              {...register("pais", {
                 required: true
               })}
             >
@@ -168,15 +164,14 @@ export default function Registro_Datos_Personales() {
 
           <div className="flex flex-col mb-8">
             <label className="font-noto text-left text-[24px] ml-3 mb-2 font-bold text-[#BFBFBF]">Ciudad:</label>
-            <input 
-              type="text" 
-              className={`font-noto py-3 rounded-2xl placeholder:text-[#978F8F] text-black font-bold px-5 text-[22px] border-2 transition-colors ${
-                errors.ciudad 
-                  ? 'border-red-500 bg-red-50' 
-                  : 'border-yellow-400 hover:bg-[#978F8F] hover:placeholder:text-white'
-              }`}
+            <input
+              type="text"
+              className={`font-noto py-3 rounded-2xl placeholder:text-[#978F8F] text-black font-bold px-5 text-[22px] border-2 transition-colors ${errors.ciudad
+                ? 'border-red-500 bg-red-50'
+                : 'border-yellow-400 hover:bg-[#978F8F] hover:placeholder:text-white'
+                }`}
               placeholder="Ej: Ciudad de México"
-              {...register("ciudad", { 
+              {...register("ciudad", {
                 required: true,
                 minLength: 2
               })}
@@ -190,15 +185,14 @@ export default function Registro_Datos_Personales() {
 
           <div className="flex flex-col">
             <label className="font-noto text-left text-[24px] ml-3 mb-2 font-bold text-[#BFBFBF]">Código postal:</label>
-            <input 
-              type="text" 
-              className={`font-noto py-3 rounded-2xl placeholder:text-[#978F8F] text-black font-bold px-5 text-[22px] border-2 transition-colors ${
-                errors.codigoPostal 
-                  ? 'border-red-500 bg-red-50' 
-                  : 'border-yellow-400 hover:bg-[#978F8F] hover:placeholder:text-white'
-              }`}
+            <input
+              type="text"
+              className={`font-noto py-3 rounded-2xl placeholder:text-[#978F8F] text-black font-bold px-5 text-[22px] border-2 transition-colors ${errors.codigoPostal
+                ? 'border-red-500 bg-red-50'
+                : 'border-yellow-400 hover:bg-[#978F8F] hover:placeholder:text-white'
+                }`}
               placeholder="Ej: 12345"
-              {...register("codigoPostal", { 
+              {...register("codigoPostal", {
                 required: true,
                 pattern: {
                   value: /^[0-9]{5}$/,
@@ -219,15 +213,14 @@ export default function Registro_Datos_Personales() {
 
           <div className="flex flex-col mb-8">
             <label className="text-left text-[24px] ml-3 mb-2 font-bold text-[#BFBFBF] font-noto">Usuario:</label>
-            <input 
-              type="text" 
-              className={`font-noto py-3 rounded-2xl placeholder:text-[#978F8F] text-black font-bold px-5 text-[22px] border-2 transition-colors ${
-                errors.usuario 
-                  ? 'border-red-500 bg-red-50' 
-                  : 'border-yellow-400 hover:bg-[#978F8F] hover:placeholder:text-white'
-              }`}
+            <input
+              type="text"
+              className={`font-noto py-3 rounded-2xl placeholder:text-[#978F8F] text-black font-bold px-5 text-[22px] border-2 transition-colors ${errors.usuario
+                ? 'border-red-500 bg-red-50'
+                : 'border-yellow-400 hover:bg-[#978F8F] hover:placeholder:text-white'
+                }`}
               placeholder="Ej: elin_blomkvist"
-              {...register("usuario", { 
+              {...register("usuario", {
                 required: true,
                 minLength: {
                   value: 4,
@@ -244,15 +237,14 @@ export default function Registro_Datos_Personales() {
 
           <div className="flex flex-col mb-8">
             <label className="font-noto text-left text-[24px] ml-3 mb-2 font-bold text-[#BFBFBF]">Contraseña:</label>
-            <input 
-              type="password" 
-              className={`font-noto py-3 rounded-2xl placeholder:text-[#978F8F] text-black font-bold px-5 text-[22px] border-2 transition-colors ${
-                errors.contraseña 
-                  ? 'border-red-500 bg-red-50' 
-                  : 'border-yellow-400 hover:bg-[#978F8F] hover:placeholder:text-white'
-              }`}
+            <input
+              type="password"
+              className={`font-noto py-3 rounded-2xl placeholder:text-[#978F8F] text-black font-bold px-5 text-[22px] border-2 transition-colors ${errors.contraseña
+                ? 'border-red-500 bg-red-50'
+                : 'border-yellow-400 hover:bg-[#978F8F] hover:placeholder:text-white'
+                }`}
               placeholder="Mínimo 8 caracteres"
-              {...register("contraseña", { 
+              {...register("contraseña", {
                 required: true,
                 minLength: {
                   value: 8,
@@ -269,15 +261,14 @@ export default function Registro_Datos_Personales() {
 
           <div className="flex flex-col">
             <label className="font-noto text-left text-[24px] ml-3 mb-2 font-bold text-[#BFBFBF]">Confirmar contraseña:</label>
-            <input 
-              type="password" 
-              className={`font-noto py-3 rounded-2xl placeholder:text-[#978F8F] text-black font-bold px-5 text-[22px] border-2 transition-colors ${
-                errors.confirmarContraseña 
-                  ? 'border-red-500 bg-red-50' 
-                  : 'border-yellow-400 hover:bg-[#978F8F] hover:placeholder:text-white'
-              }`}
+            <input
+              type="password"
+              className={`font-noto py-3 rounded-2xl placeholder:text-[#978F8F] text-black font-bold px-5 text-[22px] border-2 transition-colors ${errors.confirmarContraseña
+                ? 'border-red-500 bg-red-50'
+                : 'border-yellow-400 hover:bg-[#978F8F] hover:placeholder:text-white'
+                }`}
               placeholder="Repite tu contraseña"
-              {...register("confirmarContraseña", { 
+              {...register("confirmarContraseña", {
                 required: true,
                 validate: value => value === contraseña || "Las contraseñas no coinciden"
               })}
@@ -291,11 +282,13 @@ export default function Registro_Datos_Personales() {
         </fieldset>
 
         <div className="flex justify-center">
-          <button 
-            type="submit" 
-            className="bg-[#FFD200] w-1/2 text-black font-bold hover:text-white hover:bg-orange-500 transition-colors mt-16 py-3 px-6 font-roboto rounded-full text-[24px]"
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-[#FFD200] w-1/2 text-black font-bold hover:text-white hover:bg-orange-500 transition-colors mt-16 py-3 px-6 font-roboto rounded-full text-[24px]
+    disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Registrarse
+            {loading ? "Registrando..." : "Registrarse"}
           </button>
         </div>
 
