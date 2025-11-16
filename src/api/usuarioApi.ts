@@ -13,6 +13,10 @@ export interface RegistroData {
   contraseña: string;
 }
 
+export type RegistroForm = Pick<RegistroData, 'usuario' | 'pais' | 'nombres' | 'fechaNacimiento' | 'correo' | 'contraseña' | 'codigoPostal' | 'ciudad' | 'apellidos'> & {
+  confirmarContraseña: string;
+}
+
 const api = axios.create({
   baseURL: "http://localhost:4000", 
   headers: {
