@@ -1,20 +1,29 @@
 import { useMutation } from "@tanstack/react-query";
-import usuarioApi from "../api/usuarioApi";
-import type { LoginData } from "../api/usuarioApi";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
-export function useLogin() {
-  return useMutation({
-    mutationFn: (data: LoginData) => usuarioApi.login(data),
-    onSuccess: (resp) => {
-      toast.success("Inicio de sesión exitoso");
+export const useLogin = () => {
+  const navigate = useNavigate();
 
-      // Guardar usuario temporalmente (o token si luego generas uno)
-      localStorage.setItem("usuario", JSON.stringify(resp.data));
+  return useMutation({
+    mutationFn: async (data: { correo: string; contraseña: string }) => {
+      const res = await axios.post("http://localhost:4000/api/usuarios/login", data);
+      return res.data;
     },
-    onError: (error: any) => {
-      const msg = error?.response?.data?.message || "Error en el inicio de sesión";
-      toast.error(msg);
+    onSuccess: (res) => {
+      const usuario = res.data;
+
+      // Guardar usuario en localStorage
+      localStorage.setItem("usuario", JSON.stringify(usuario));
+
+      toast.success("Bienvenido " + usuario.nombres);
+
+      // Redirigir a página principal
+      navigate("/principal");
+    },
+    onError: () => {
+      toast.error("Credenciales inválidas");
     }
   });
-}
+};
