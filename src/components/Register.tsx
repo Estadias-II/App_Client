@@ -183,7 +183,7 @@ export default function RegistroMultiPaso() {
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: -200, opacity: 0 }}
                 transition={{ duration: 0.45, ease: "easeInOut" }}
-                className="w-full"
+                className="absolute w-full"
               >
                 <h2 className="text-[40px] text-center font-bold mb-8 text-[#BFBFBF] font-orbitron">
                   Datos de usuario

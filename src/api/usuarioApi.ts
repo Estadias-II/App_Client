@@ -13,6 +13,11 @@ export interface RegistroData {
   contraseña: string;
 }
 
+export interface LoginData {
+  correo: string;
+  contraseña: string;
+}
+
 export type RegistroForm = Pick<RegistroData, 'usuario' | 'pais' | 'nombres' | 'fechaNacimiento' | 'correo' | 'contraseña' | 'codigoPostal' | 'ciudad' | 'apellidos'> & {
   confirmarContraseña: string;
 }
@@ -29,6 +34,11 @@ export const usuarioApi = {
     const response = await api.post("/api/usuarios", data);
     return response.data;
   },
+
+  login: async (data: LoginData) => {
+    const response = await api.post("/api/usuarios/login", data);
+    return response.data;
+  }
 };
 
 export default usuarioApi;
