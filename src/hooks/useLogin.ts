@@ -12,9 +12,10 @@ export const useLogin = () => {
       return res.data;
     },
     onSuccess: (res) => {
-      const usuario = res.data;
+      const { token, data: usuario } = res;
 
-      // Guardar usuario en localStorage
+      // Guardar token y usuario en localStorage
+      localStorage.setItem("token", token);
       localStorage.setItem("usuario", JSON.stringify(usuario));
 
       toast.success("Bienvenido " + usuario.nombres);
