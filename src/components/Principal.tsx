@@ -1,9 +1,12 @@
+// components/Principal.tsx (actualizado)
 import LogoEmpresa from "../assets/LogoEmpresa.png";
 import Navbar from "./Navbar";
 import { useAuth } from "../hooks/useAuth";
 import { useScryfallCards } from "../hooks/useScryfallCards";
 import { useState } from "react";
-import { FaSearch, FaSync, FaStar, FaDollarSign } from "react-icons/fa";
+import { FaSearch, FaSync, FaStar, FaDollarSign, FaEllipsisV } from "react-icons/fa";
+import { useCart } from "../context/CartContext";
+import CardDetailsModal from "./CardDetailsModal";
 
 export default function Principal() {
   const { isAuthenticated, userProfile, loading: authLoading } = useAuth();
@@ -15,8 +18,12 @@ export default function Principal() {
     loadPopularCards,
     searchCards 
   } = useScryfallCards();
+  const { addToCart } = useCart();
   
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCard, setSelectedCard] = useState<any>(null);
+  const [showCardMenu, setShowCardMenu] = useState<string | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   // Si está cargando la autenticación, mostrar loading
   if (authLoading) {
@@ -63,6 +70,33 @@ export default function Principal() {
       return `€${card.prices.eur}`;
     }
     return "No disponible";
+  };
+
+  const isCardAvailable = (card: any) => {
+    // Lógica para determinar si la carta está disponible para agregar al carrito
+    // Por ahora, asumimos que todas las cartas están disponibles
+    return card.prices?.usd || card.prices?.usd_foil || card.prices?.eur;
+  };
+
+  const handleAddToCart = (card: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isCardAvailable(card)) {
+      addToCart(card);
+      setShowCardMenu(null);
+      // Aquí podrías agregar un toast de confirmación
+    }
+  };
+
+  const handleViewDetails = (card: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedCard(card);
+    setShowDetailsModal(true);
+    setShowCardMenu(null);
+  };
+
+  const handleCardClick = (card: any) => {
+    setSelectedCard(card);
+    setShowDetailsModal(true);
   };
 
   return (
@@ -152,11 +186,13 @@ export default function Principal() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {cards.map((card) => {
               const imageUrl = getCardImage(card);
+              const available = isCardAvailable(card);
               
               return (
                 <div
                   key={card.id}
-                  className="bg-[#1a1a1a] rounded-lg overflow-hidden border border-gray-700 hover:border-yellow-400 transition-all duration-300 hover:shadow-2xl hover:shadow-yellow-400/20"
+                  className="bg-[#1a1a1a] rounded-lg overflow-hidden border border-gray-700 hover:cursor-pointer hover:border-yellow-400 transition-all duration-300 hover:shadow-2xl hover:shadow-yellow-400/20 relative group"
+                  onClick={() => handleCardClick(card)}
                 >
                   {/* Imagen de la carta */}
                   <div className="aspect-[0.72] bg-gray-800 relative">
@@ -172,6 +208,42 @@ export default function Principal() {
                         <span>Imagen no disponible</span>
                       </div>
                     )}
+
+                    {/* 3 Puntitos - Menú de opciones */}
+                    <div className="absolute top-2 right-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowCardMenu(showCardMenu === card.id ? null : card.id);
+                        }}
+                        className="w-8 h-8 bg-black bg-opacity-70 rounded-full flex items-center justify-center text-white hover:bg-opacity-90 transition-all"
+                      >
+                        <FaEllipsisV size={14} />
+                      </button>
+
+                      {/* Menú desplegable */}
+                      {showCardMenu === card.id && (
+                        <div className="absolute right-0 top-full mt-1 w-48 bg-[#2a2a2a] border border-yellow-400 rounded-lg shadow-xl z-10">
+                          <button
+                            onClick={(e) => handleAddToCart(card, e)}
+                            disabled={!available}
+                            className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                              available 
+                                ? "text-white hover:bg-yellow-400 hover:text-black" 
+                                : "text-gray-500 cursor-not-allowed"
+                            }`}
+                          >
+                            {available ? "Agregar al carrito" : "No disponible"}
+                          </button>
+                          <button
+                            onClick={(e) => handleViewDetails(card, e)}
+                            className="w-full text-left px-4 py-3 text-sm text-white hover:bg-yellow-400 hover:text-black transition-colors border-t border-gray-600"
+                          >
+                            Ver detalles
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Información de la carta */}
@@ -245,6 +317,13 @@ export default function Principal() {
           </div>
         )}
       </main>
+
+      {/* Modal de detalles de la carta */}
+      <CardDetailsModal 
+        card={selectedCard}
+        isOpen={showDetailsModal}
+        onClose={() => setShowDetailsModal(false)}
+      />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+// App.tsx (actualizado)
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Login from './components/Login'
 import Register from './components/Register'
@@ -6,13 +7,21 @@ import 'react-toastify/dist/ReactToastify.css'
 import Principal from './components/Principal'
 import Settings from './components/Settings'
 import { useAuth } from './hooks/useAuth'
+import { CartProvider } from './context/CartContext'
 
 // Componente para rutas protegidas
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
   
   if (loading) {
-    return <div>Cargando...</div>;
+    return (
+      <div className="min-h-screen bg-[#0d0d0d] text-white font-orbitron flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+          <p className="text-xl">Cargando...</p>
+        </div>
+      </div>
+    );
   }
   
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
@@ -20,7 +29,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <>
+    <CartProvider>
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
@@ -49,7 +58,7 @@ function App() {
         pauseOnHover
         theme="colored"
       />
-    </>
+    </CartProvider>
   )
 }
 

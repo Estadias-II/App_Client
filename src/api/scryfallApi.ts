@@ -1,4 +1,3 @@
-// api/scryfallApi.ts
 import axios from 'axios';
 
 export interface ScryfallCard {
@@ -14,6 +13,7 @@ export interface ScryfallCard {
     color_identity: string[];
     set_name: string;
     rarity: string;
+    collector_number: string;
     prices: {
         usd?: string;
         usd_foil?: string;
@@ -43,6 +43,9 @@ export interface ScryfallCard {
             border_crop: string;
         };
     }>;
+    legalities: {
+        [format: string]: string;
+    };
 }
 
 export interface ScryfallList {
@@ -65,79 +68,112 @@ const scryfallApi = axios.create({
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const scryfallService = {
-    // Obtener cartas aleatorias
-    getRandomCards: async (count: number = 20): Promise<ScryfallCard[]> => {
+    // Obtener cartas populares (CORREGIDO)
+    getPopularCards: async (): Promise<ScryfallCard[]> => {
         try {
-            await delay(100); // Respetar rate limits
-            const cards: ScryfallCard[] = [];
-
-            for (let i = 0; i < count; i++) {
-                const response = await scryfallApi.get('/cards/random');
-                cards.push(response.data);
-                if (i < count - 1) await delay(50); // Pequeño delay entre requests
+            await delay(100);
+            // Usamos cartas con alto ranking en EDHREC como proxy para "populares"
+            const response = await scryfallApi.get('/cards/search', {
+                params: {
+                    q: 'legal:commander edhrec:>=10000',
+                    order: 'edhrec',
+                    unique: 'cards'
+                }
+            });
+            
+            // Tomar las primeras 20 cartas
+            return response.data.data.slice(0, 20);
+        } catch (error: any) {
+            console.error('Error fetching popular cards:', error);
+            
+            // Fallback: si falla, devolver cartas de sets populares
+            if (error.response?.status === 404) {
+                const fallbackResponse = await scryfallApi.get('/cards/search', {
+                    params: {
+                        q: 'set:dom or set:war or set:m20 or set:iko or set:znr',
+                        order: 'released',
+                        dir: 'desc',
+                        unique: 'cards'
+                    }
+                });
+                return fallbackResponse.data.data.slice(0, 20);
             }
-
-            return cards;
-        } catch (error) {
-            console.error('Error fetching random cards:', error);
             throw error;
         }
     },
 
-    // Buscar cartas por query
-    searchCards: async (query: string, page: number = 1): Promise<ScryfallList> => {
+    // Obtener cartas aleatorias (CORREGIDO)
+    getRandomCards: async (count: number = 20): Promise<ScryfallCard[]> => {
+        try {
+            await delay(100);
+            
+            // Usar el endpoint dedicado para cartas aleatorias múltiples veces
+            const cardPromises = [];
+            
+            for (let i = 0; i < count; i++) {
+                cardPromises.push(
+                    scryfallApi.get('/cards/random').then(response => response.data)
+                );
+                // Pequeño delay entre requests para respetar rate limits
+                if (i < count - 1) await delay(50);
+            }
+            
+            const cards = await Promise.all(cardPromises);
+            return cards;
+        } catch (error: any) {
+            console.error('Error fetching random cards:', error);
+            
+            // Fallback: buscar cartas con orden aleatorio
+            if (error.response?.status === 404) {
+                const fallbackResponse = await scryfallApi.get('/cards/search', {
+                    params: {
+                        q: 'game:paper',
+                        order: 'random',
+                        unique: 'cards'
+                    }
+                });
+                return fallbackResponse.data.data.slice(0, count);
+            }
+            throw error;
+        }
+    },
+
+    // Buscar cartas por query (MEJORADO)
+    searchCards: async (query: string): Promise<ScryfallList> => {
         try {
             await delay(100);
             const response = await scryfallApi.get('/cards/search', {
                 params: {
                     q: query,
-                    page,
                     unique: 'cards',
                     order: 'name'
                 }
             });
             return response.data;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error searching cards:', error);
+            
+            // Si es un error 404 (no se encontraron cartas), devolver lista vacía
+            if (error.response?.status === 404) {
+                return {
+                    object: 'list',
+                    has_more: false,
+                    data: [],
+                    total_cards: 0
+                };
+            }
             throw error;
         }
     },
 
-    // Obtener cartas populares (por EDHREC rank)
-    getPopularCards: async (page: number = 1): Promise<ScryfallList> => {
+    // Obtener una carta específica por ID
+    getCardById: async (id: string): Promise<ScryfallCard> => {
         try {
             await delay(100);
-            const response = await scryfallApi.get('/cards/search', {
-                params: {
-                    q: 'is:commander',
-                    page,
-                    unique: 'cards',
-                    order: 'edhrec',
-                    dir: 'desc'
-                }
-            });
+            const response = await scryfallApi.get(`/cards/${id}`);
             return response.data;
         } catch (error) {
-            console.error('Error fetching popular cards:', error);
-            throw error;
-        }
-    },
-
-    // Obtener cartas por set específico
-    getCardsBySet: async (setCode: string, page: number = 1): Promise<ScryfallList> => {
-        try {
-            await delay(100);
-            const response = await scryfallApi.get('/cards/search', {
-                params: {
-                    q: `e:${setCode}`,
-                    page,
-                    unique: 'prints',
-                    order: 'name'
-                }
-            });
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching cards by set:', error);
+            console.error('Error fetching card by ID:', error);
             throw error;
         }
     }

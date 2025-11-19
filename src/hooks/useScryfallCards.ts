@@ -1,4 +1,3 @@
-// hooks/useScryfallCards.ts
 import { useState, useEffect } from 'react';
 import { scryfallService, type ScryfallCard } from '../api/scryfallApi';
 
@@ -13,8 +12,9 @@ export const useScryfallCards = () => {
             setError(null);
             const randomCards = await scryfallService.getRandomCards(count);
             setCards(randomCards);
-        } catch (err) {
-            setError('Error al cargar las cartas');
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.details || 'Error al cargar las cartas aleatorias. Intenta nuevamente.';
+            setError(errorMessage);
             console.error(err);
         } finally {
             setLoading(false);
@@ -25,10 +25,11 @@ export const useScryfallCards = () => {
         try {
             setLoading(true);
             setError(null);
-            const result = await scryfallService.getPopularCards();
-            setCards(result.data.slice(0, 20)); // Tomar solo las primeras 20
-        } catch (err) {
-            setError('Error al cargar las cartas populares');
+            const popularCards = await scryfallService.getPopularCards();
+            setCards(popularCards);
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.details || 'Error al cargar las cartas populares';
+            setError(errorMessage);
             console.error(err);
         } finally {
             setLoading(false);
@@ -41,14 +42,23 @@ export const useScryfallCards = () => {
             setError(null);
             const result = await scryfallService.searchCards(query);
             setCards(result.data);
-        } catch (err) {
-            setError('Error al buscar cartas');
+            
+            if (result.data.length === 0) {
+                setError('No se encontraron cartas con ese criterio de búsqueda.');
+            }
+        } catch (err: any) {
+            if (err.response?.status === 404) {
+                setError('No se encontraron cartas con ese criterio de búsqueda.');
+            } else {
+                setError('Error al buscar cartas. Verifica tu conexión.');
+            }
             console.error(err);
         } finally {
             setLoading(false);
         }
     };
 
+    // Cargar cartas aleatorias al montar el componente
     useEffect(() => {
         loadRandomCards(20);
     }, []);
