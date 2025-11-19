@@ -12,6 +12,9 @@ export default {
         'noto': ['Noto Sans', 'sans-serif'],
         'roboto': ['Roboto', 'sans-serif'],
       },
+      aspectRatio: {
+        'card': '0.72', 
+      },
     },
   },
   plugins: [],

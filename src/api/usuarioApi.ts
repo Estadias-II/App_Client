@@ -1,4 +1,3 @@
-// /api/usuarioApi.ts
 import axios from "axios";
 
 export interface RegistroData {
@@ -25,6 +24,38 @@ export interface PerfilResponse {
     nombres: string;
     apellidos: string;
   };
+}
+
+export interface PerfilCompletoResponse {
+  success: boolean;
+  data: {
+    idUsuario: number;
+    nombres: string;
+    apellidos: string;
+    fechaNacimiento: string;
+    correo: string;
+    pais: string;
+    ciudad: string;
+    codigoPostal: string;
+    usuario: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+}
+
+export interface UpdatePerfilData {
+  nombres?: string;
+  apellidos?: string;
+  fechaNacimiento?: string;
+  pais?: string;
+  ciudad?: string;
+  codigoPostal?: string;
+}
+
+export interface UpdatePasswordData {
+  contraseñaActual: string;
+  nuevaContraseña: string;
+  confirmarContraseña: string;
 }
 
 export type RegistroForm = Pick<RegistroData, 'usuario' | 'pais' | 'nombres' | 'fechaNacimiento' | 'correo' | 'contraseña' | 'codigoPostal' | 'ciudad' | 'apellidos'> & {
@@ -65,6 +96,21 @@ export const usuarioApi = {
 
   getPerfil: async (): Promise<PerfilResponse> => {
     const response = await api.get("/api/usuarios/perfil");
+    return response.data;
+  },
+
+  getPerfilCompleto: async (): Promise<PerfilCompletoResponse> => {
+    const response = await api.get("/api/usuarios/perfil/completo");
+    return response.data;
+  },
+
+  updatePerfil: async (data: UpdatePerfilData) => {
+    const response = await api.put("/api/usuarios/perfil", data);
+    return response.data;
+  },
+
+  updatePassword: async (data: UpdatePasswordData) => {
+    const response = await api.put("/api/usuarios/perfil/password", data);
     return response.data;
   }
 };
