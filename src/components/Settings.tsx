@@ -54,6 +54,50 @@ const paises = [
   { value: "au", label: "Australia" }
 ];
 
+// Función para formatear fecha al formato YYYY-MM-DD para input date
+const formatDateForInput = (dateString: string): string => {
+  if (!dateString) return '';
+  
+  // Si ya está en formato YYYY-MM-DD, retornar tal cual
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    return dateString;
+  }
+  
+  // Si viene en formato dd/mm/aaaa, convertir a YYYY-MM-DD
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
+    const [day, month, year] = dateString.split('/');
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+  
+  // Si es un objeto Date o string ISO
+  try {
+    const date = new Date(dateString);
+    if (!isNaN(date.getTime())) {
+      return date.toISOString().split('T')[0];
+    }
+  } catch (error) {
+    console.error('Error formateando fecha:', error);
+  }
+  
+  return '';
+};
+
+// Función para formatear fecha para mostrar en la UI
+const formatDateForDisplay = (dateString: string): string => {
+  if (!dateString) return '';
+  
+  try {
+    const date = new Date(dateString);
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleDateString('es-ES');
+    }
+  } catch (error) {
+    console.error('Error formateando fecha para display:', error);
+  }
+  
+  return dateString;
+};
+
 export default function Settings() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [activeSection, setActiveSection] = useState<'personal' | 'password'>('personal');
@@ -61,8 +105,20 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
-  const { register: registerPerfil, handleSubmit: handleSubmitPerfil, formState: { errors: errorsPerfil }, reset: resetPerfil, setValue: setPerfilValue } = useForm<PerfilForm>();
-  const { register: registerPassword, handleSubmit: handleSubmitPassword, formState: { errors: errorsPassword }, reset: resetPassword } = useForm<PasswordForm>();
+  const { 
+    register: registerPerfil, 
+    handleSubmit: handleSubmitPerfil, 
+    formState: { errors: errorsPerfil }, 
+    reset: resetPerfil,
+    setValue: setPerfilValue 
+  } = useForm<PerfilForm>();
+  
+  const { 
+    register: registerPassword, 
+    handleSubmit: handleSubmitPassword, 
+    formState: { errors: errorsPassword }, 
+    reset: resetPassword 
+  } = useForm<PasswordForm>();
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -74,8 +130,17 @@ export default function Settings() {
     try {
       setLoading(true);
       const response = await usuarioApi.getPerfilCompleto();
-      setPerfil(response.data);
-      resetPerfil(response.data);
+      const perfilData = response.data;
+      
+      setPerfil(perfilData);
+      
+      // Formatear los datos para el formulario
+      const formData = {
+        ...perfilData,
+        fechaNacimiento: formatDateForInput(perfilData.fechaNacimiento)
+      };
+      
+      resetPerfil(formData);
     } catch (error) {
       console.error('Error al cargar perfil:', error);
       toast.error('Error al cargar los datos del perfil');
@@ -87,10 +152,12 @@ export default function Settings() {
   const onUpdatePerfil = async (data: PerfilForm) => {
     try {
       setUpdating(true);
+      
+      // Convertir la fecha de vuelta al formato esperado por el backend si es necesario
       const updateData: UpdatePerfilData = {
         nombres: data.nombres,
         apellidos: data.apellidos,
-        fechaNacimiento: data.fechaNacimiento,
+        fechaNacimiento: data.fechaNacimiento, // Ya está en formato YYYY-MM-DD que Sequelize puede manejar
         pais: data.pais,
         ciudad: data.ciudad,
         codigoPostal: data.codigoPostal
@@ -280,7 +347,6 @@ export default function Settings() {
                               <option 
                                 key={pais.value} 
                                 value={pais.value}
-                                selected={perfil.pais === pais.value}
                               >
                                 {pais.label}
                               </option>
@@ -352,6 +418,10 @@ export default function Settings() {
                         <div>
                           <span className="text-gray-400">País actual:</span>
                           <p className="text-white font-medium">{getPaisLabel(perfil.pais)}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Fecha de nacimiento:</span>
+                          <p className="text-white font-medium">{formatDateForDisplay(perfil.fechaNacimiento)}</p>
                         </div>
                         <div>
                           <span className="text-gray-400">Cuenta creada:</span>
