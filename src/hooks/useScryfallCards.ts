@@ -51,7 +51,7 @@ export const useScryfallCards = () => {
             if (err.response?.status === 404) {
                 setError('No se encontraron cartas con ese criterio de búsqueda.');
             } else {
-                setError('Error al buscar cartas. Verifica tu conexión.');
+                setError('No se encontraron cartas con ese criterio de búsqueda.');
             }
             console.error(err);
         } finally {

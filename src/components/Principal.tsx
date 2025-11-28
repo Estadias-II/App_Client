@@ -1,10 +1,22 @@
-// components/Principal.tsx (actualizado)
+// components/Principal.tsx
 import LogoEmpresa from "../assets/LogoEmpresa.png";
 import Navbar from "./Navbar";
 import { useAuth } from "../hooks/useAuth";
 import { useScryfallCards } from "../hooks/useScryfallCards";
+import { useScryfallCategories, type CategoryOption } from "../hooks/useScryfallCategories";
 import { useState } from "react";
-import { FaSearch, FaSync, FaStar, FaDollarSign, FaEllipsisV } from "react-icons/fa";
+import { 
+  FaSearch, 
+  FaSync, 
+  FaStar, 
+  FaDollarSign, 
+  FaEllipsisV, 
+  FaFilter,
+  FaChevronDown,
+  FaChevronUp,
+  FaTimes,
+  FaExclamationTriangle
+} from "react-icons/fa";
 import { useCart } from "../context/CartContext";
 import CardDetailsModal from "./CardDetailsModal";
 
@@ -13,17 +25,27 @@ export default function Principal() {
   const { 
     cards, 
     loading: cardsLoading, 
-    error, 
+    error: cardsError, 
     loadRandomCards, 
     loadPopularCards,
     searchCards 
   } = useScryfallCards();
+  
+  const { 
+    categories, 
+    loading: categoriesLoading, 
+    error: categoriesError 
+  } = useScryfallCategories();
+  
   const { addToCart } = useCart();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCard, setSelectedCard] = useState<any>(null);
   const [showCardMenu, setShowCardMenu] = useState<string | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [activeCategories, setActiveCategories] = useState<{[key: string]: boolean}>({});
+  const [selectedFilters, setSelectedFilters] = useState<{[key: string]: string[]}>({});
+  const [showFilters, setShowFilters] = useState(false);
 
   // Si está cargando la autenticación, mostrar loading
   if (authLoading) {
@@ -47,6 +69,67 @@ export default function Principal() {
     if (searchQuery.trim()) {
       searchCards(searchQuery);
     }
+  };
+
+  const handleCategorySearch = (categoryValue: string, categoryKey: string) => {
+    setSelectedFilters({ [categoryKey]: [categoryValue] });
+    searchCards(categoryValue);
+    setShowFilters(false);
+  };
+
+  const toggleCategory = (categoryKey: string) => {
+    setActiveCategories(prev => ({
+      ...prev,
+      [categoryKey]: !prev[categoryKey]
+    }));
+  };
+
+  const clearFilters = () => {
+    setSelectedFilters({});
+    loadRandomCards(20);
+  };
+
+  const removeFilter = (categoryKey: string, filterValue: string) => {
+    setSelectedFilters(prev => {
+      const currentFilters = prev[categoryKey] || [];
+      const newFilters = currentFilters.filter(f => f !== filterValue);
+      
+      if (newFilters.length === 0) {
+        const { [categoryKey]: removed, ...rest } = prev;
+        return rest;
+      } else {
+        return {
+          ...prev,
+          [categoryKey]: newFilters
+        };
+      }
+    });
+  };
+
+  // Función para determinar si un filtro está activo
+  const isFilterActive = (categoryKey: string, filterValue: string): boolean => {
+    return selectedFilters[categoryKey]?.includes(filterValue) || false;
+  };
+
+  // Obtener todos los filtros activos para mostrar
+  const getAllActiveFilters = () => {
+    const activeFilters: Array<{categoryKey: string, filterValue: string, label: string}> = [];
+    
+    Object.entries(selectedFilters).forEach(([categoryKey, filters]) => {
+      filters.forEach(filterValue => {
+        const category = categories[categoryKey];
+        const option = category?.options.find(opt => opt.value === filterValue);
+        if (option) {
+          activeFilters.push({
+            categoryKey,
+            filterValue,
+            label: option.label
+          });
+        }
+      });
+    });
+    
+    return activeFilters;
   };
 
   const getCardImage = (card: any) => {
@@ -73,8 +156,6 @@ export default function Principal() {
   };
 
   const isCardAvailable = (card: any) => {
-    // Lógica para determinar si la carta está disponible para agregar al carrito
-    // Por ahora, asumimos que todas las cartas están disponibles
     return card.prices?.usd || card.prices?.usd_foil || card.prices?.eur;
   };
 
@@ -83,7 +164,6 @@ export default function Principal() {
     if (isCardAvailable(card)) {
       addToCart(card);
       setShowCardMenu(null);
-      // Aquí podrías agregar un toast de confirmación
     }
   };
 
@@ -98,6 +178,22 @@ export default function Principal() {
     setSelectedCard(card);
     setShowDetailsModal(true);
   };
+
+  const activeFilters = getAllActiveFilters();
+  const totalActiveFilters = activeFilters.length;
+
+  // Loading para categorías
+  if (categoriesLoading) {
+    return (
+      <div className="min-h-screen bg-[#0d0d0d] text-white font-orbitron flex items-center justify-center">
+        <div className="text-center">
+          <img src={LogoEmpresa} alt="Logo" className="w-32 mx-auto mb-4" />
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto"></div>
+          <p className="mt-4 text-lg">Cargando categorías...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] text-white font-orbitron">
@@ -140,24 +236,150 @@ export default function Principal() {
             </button>
           </form>
 
-          {/* Botones de acción */}
-          <div className="flex justify-center gap-4 flex-wrap">
-            <button
-              onClick={() => loadRandomCards(20)}
-              disabled={cardsLoading}
-              className="px-6 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-            >
-              <FaSync className={cardsLoading ? "animate-spin" : ""} />
-              Cartas Aleatorias
-            </button>
-            <button
-              onClick={loadPopularCards}
-              disabled={cardsLoading}
-              className="px-6 py-3 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-            >
-              <FaStar />
-              Cartas Populares
-            </button>
+          {/* Botones de acción y filtros */}
+          <div className="flex flex-col gap-4">
+            {/* Botones principales */}
+            <div className="flex justify-center gap-4 flex-wrap">
+              <button
+                onClick={() => {
+                  clearFilters();
+                  loadRandomCards(20);
+                }}
+                disabled={cardsLoading}
+                className="px-6 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                <FaSync className={cardsLoading ? "animate-spin" : ""} />
+                Cartas Aleatorias
+              </button>
+              <button
+                onClick={() => {
+                  clearFilters();
+                  loadPopularCards();
+                }}
+                disabled={cardsLoading}
+                className="px-6 py-3 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                <FaStar />
+                Cartas Populares
+              </button>
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`px-6 py-3 font-bold rounded-lg transition-colors flex items-center gap-2 ${
+                  totalActiveFilters > 0
+                    ? 'bg-orange-500 text-white hover:bg-orange-600'
+                    : 'bg-green-600 text-white hover:bg-green-700'
+                }`}
+              >
+                <FaFilter />
+                {showFilters ? "Ocultar Filtros" : "Mostrar Filtros"}
+                {showFilters ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
+                {totalActiveFilters > 0 && (
+                  <span className="ml-1 bg-white text-yellow-500 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
+                    {totalActiveFilters}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Panel de filtros */}
+            {showFilters && (
+              <div className="bg-[#1a1a1a] border border-yellow-400 rounded-lg p-6 relative">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold text-yellow-400">Filtrar Cartas</h3>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={clearFilters}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm flex items-center gap-2"
+                    >
+                      <FaTimes size={12} />
+                      Limpiar Todo
+                    </button>
+                  </div>
+                </div>
+
+                {categoriesError && (
+                  <div className="mb-4 p-3 bg-red-900 border border-red-400 rounded-lg flex items-center gap-3">
+                    <FaExclamationTriangle className="text-red-400" />
+                    <div>
+                      <p className="text-red-200 font-bold">Error cargando categorías</p>
+                      <p className="text-red-300 text-sm">{categoriesError}</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {Object.entries(categories).map(([key, category]) => (
+                    <div key={key} className="relative">
+                      <button
+                        onClick={() => toggleCategory(key)}
+                        className={`w-full flex justify-between items-center p-3 rounded-lg transition-colors ${
+                          selectedFilters[key]?.length > 0
+                            ? 'bg-yellow-500 text-white font-bold' 
+                            : 'bg-[#2a2a2a] text-white hover:bg-[#3a3a3a]'
+                        }`}
+                      >
+                        <span>{category.name}</span>
+                        <div className="flex items-center gap-2">
+                          {selectedFilters[key]?.length > 0 && (
+                            <span className="bg-white text-yellow-500 rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                              {selectedFilters[key].length}
+                            </span>
+                          )}
+                          {activeCategories[key] ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
+                        </div>
+                      </button>
+                      
+                      {/* Lista flotante */}
+                      {activeCategories[key] && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-[#2a2a2a] border border-yellow-400 rounded-lg shadow-xl z-20 max-h-60 overflow-y-auto">
+                          <div className="p-2 space-y-1">
+                            {category.options.map((option) => (
+                              <button
+                                key={option.value}
+                                onClick={() => handleCategorySearch(option.value, key)}
+                                className={`w-full text-left p-2 rounded transition-colors flex items-center justify-between ${
+                                  isFilterActive(key, option.value)
+                                    ? 'bg-yellow-500 text-white font-bold'
+                                    : 'bg-[#2a2a2a] text-white hover:bg-[#3a3a3a]'
+                                }`}
+                              >
+                                <span className="truncate">{option.label}</span>
+                                {isFilterActive(key, option.value) && (
+                                  <div className="w-2 h-2 bg-white rounded-full ml-2 flex-shrink-0"></div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Filtro activo */}
+                {totalActiveFilters > 0 && (
+                  <div className="mt-4 p-3 bg-[#2a2a2a] rounded-lg">
+                    <h4 className="text-sm font-bold text-gray-300 mb-2">Filtro activo:</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {activeFilters.map(({ categoryKey, filterValue, label }) => (
+                        <span
+                          key={`${categoryKey}-${filterValue}`}
+                          className="px-3 py-1 bg-yellow-500 text-white text-sm rounded-full font-bold flex items-center gap-2"
+                        >
+                          {label}
+                          <button
+                            onClick={() => removeFilter(categoryKey, filterValue)}
+                            className="hover:text-gray-200"
+                          >
+                            <FaTimes size={10} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -169,11 +391,14 @@ export default function Principal() {
           </div>
         )}
 
-        {error && (
+        {cardsError && (
           <div className="text-center py-8">
-            <p className="text-red-400 text-lg">{error}</p>
+            <p className="text-red-400 text-lg">{cardsError}</p>
             <button
-              onClick={() => loadRandomCards(20)}
+              onClick={() => {
+                clearFilters();
+                loadRandomCards(20);
+              }}
               className="mt-4 px-6 py-2 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-500 transition-colors"
             >
               Reintentar
@@ -182,7 +407,7 @@ export default function Principal() {
         )}
 
         {/* Grid de cartas */}
-        {!cardsLoading && !error && cards.length > 0 && (
+        {!cardsLoading && !cardsError && cards.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {cards.map((card) => {
               const imageUrl = getCardImage(card);
@@ -305,11 +530,14 @@ export default function Principal() {
         )}
 
         {/* Mensaje cuando no hay cartas */}
-        {!cardsLoading && !error && cards.length === 0 && (
+        {!cardsLoading && !cardsError && cards.length === 0 && (
           <div className="text-center py-12">
             <p className="text-xl text-gray-400">No se encontraron cartas</p>
             <button
-              onClick={() => loadRandomCards(20)}
+              onClick={() => {
+                clearFilters();
+                loadRandomCards(20);
+              }}
               className="mt-4 px-6 py-2 bg-yellow-400 text-black font-bold rounded-lg hover:bg-yellow-500 transition-colors"
             >
               Cargar Cartas Aleatorias
