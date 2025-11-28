@@ -14,7 +14,7 @@ import AdminRoute from './components/AdminRoute' // Nuevo componente
 // Componente para rutas protegidas
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
-  
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0d0d0d] text-white font-orbitron flex items-center justify-center">
@@ -25,7 +25,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-  
+
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
 }
 
@@ -36,34 +36,34 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
         <Route path="/registro" element={<Register />} />
-        <Route 
-          path="/principal" 
+        <Route
+          path="/principal"
           element={
             <ProtectedRoute>
               <Principal />
             </ProtectedRoute>
-          } 
+          }
         />
-        <Route 
-          path="/settings" 
+        <Route
+          path="/settings"
           element={
             <ProtectedRoute>
               <Settings />
             </ProtectedRoute>
-          } 
+          }
         />
         {/* Nueva ruta protegida para admin */}
-        <Route 
-          path="/admin" 
+        <Route
+          path="/admin/*"
           element={
             <AdminRoute>
               <AdminPanel />
             </AdminRoute>
-          } 
+          }
         />
       </Routes>
 
-      <ToastContainer 
+      <ToastContainer
         position="top-right"
         autoClose={3000}
         pauseOnHover
