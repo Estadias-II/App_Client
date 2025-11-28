@@ -8,6 +8,7 @@ export interface PerfilUsuario {
     idUsuario: number;
     nombres: string;
     apellidos: string;
+    rol?: string;
 }
 
 export const useAuth = () => {
@@ -15,57 +16,6 @@ export const useAuth = () => {
     const [userProfile, setUserProfile] = useState<PerfilUsuario | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const navigate = useNavigate();
-
-    useEffect(() => {
-        const verifyAuth = async () => {
-            const token = localStorage.getItem('token');
-
-            if (!token) {
-                setIsAuthenticated(false);
-                setLoading(false);
-                navigate('/login');
-                return;
-            }
-
-            try {
-                // Configurar el token en los headers de axios
-                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-                // Llamar al endpoint de perfil para verificar el token
-                const response = await usuarioApi.getPerfil();
-
-                if (response.success) {
-                    setIsAuthenticated(true);
-                    setUserProfile(response.data);
-
-                    // Actualizar localStorage con la información más reciente
-                    const usuarioStorage = localStorage.getItem('usuario');
-                    if (usuarioStorage) {
-                        const usuario = JSON.parse(usuarioStorage);
-                        usuario.nombres = response.data.nombres;
-                        usuario.apellidos = response.data.apellidos;
-                        localStorage.setItem('usuario', JSON.stringify(usuario));
-                    }
-                } else {
-                    throw new Error('Token inválido');
-                }
-            } catch (error) {
-                console.error('Error de autenticación:', error);
-                // Limpiar datos inválidos
-                localStorage.removeItem('token');
-                localStorage.removeItem('usuario');
-                delete axios.defaults.headers.common['Authorization'];
-
-                setIsAuthenticated(false);
-                setUserProfile(null);
-                navigate('/login');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        verifyAuth();
-    }, [navigate]);
 
     const logout = () => {
         localStorage.removeItem('token');
@@ -76,10 +26,72 @@ export const useAuth = () => {
         navigate('/login');
     };
 
+    useEffect(() => {
+        const verifyAuth = async () => {
+            const token = localStorage.getItem('token');
+            console.log('useAuth - Token encontrado:', !!token);
+
+            if (!token) {
+                console.log('useAuth - No hay token, redirigiendo a login');
+                setIsAuthenticated(false);
+                setLoading(false);
+                navigate('/login');
+                return;
+            }
+
+            try {
+                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                const response = await usuarioApi.getPerfil();
+                console.log('useAuth - Respuesta del perfil:', response);
+
+                if (response.success) {
+                    setIsAuthenticated(true);
+                    setUserProfile(response.data);
+                    console.log('useAuth - Perfil establecido:', response.data);
+
+                    // Actualizar localStorage
+                    const usuarioStorage = localStorage.getItem('usuario');
+                    if (usuarioStorage) {
+                        const usuario = JSON.parse(usuarioStorage);
+                        usuario.nombres = response.data.nombres;
+                        usuario.apellidos = response.data.apellidos;
+                        usuario.rol = response.data.rol;
+                        localStorage.setItem('usuario', JSON.stringify(usuario));
+                        console.log('useAuth - localStorage actualizado con rol:', usuario.rol);
+                    }
+                } else {
+                    throw new Error('Token inválido');
+                }
+            } catch (error) {
+                console.error('useAuth - Error de autenticación:', error);
+                logout();
+            } finally {
+                setLoading(false);
+                console.log('useAuth - Loading terminado');
+            }
+        };
+
+        verifyAuth();
+    }, [navigate]);
+
+    const isAdmin = () => {
+        const result = userProfile?.rol === 'admin' || userProfile?.rol === 'superadmin';
+        console.log('useAuth - isAdmin check:', result, 'rol:', userProfile?.rol);
+        return result;
+    };
+
+    const isSuperAdmin = () => {
+        const result = userProfile?.rol === 'superadmin';
+        console.log('useAuth - isSuperAdmin check:', result, 'rol:', userProfile?.rol);
+        return result;
+    };
+
     return {
         isAuthenticated,
         userProfile,
         loading,
-        logout
+        logout,
+        isAdmin,
+        isSuperAdmin
     };
 };

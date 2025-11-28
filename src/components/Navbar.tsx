@@ -7,7 +7,8 @@ import {
   FaCog, 
   FaHome, 
   FaBars,
-  FaTimes 
+  FaTimes,
+  FaShieldAlt // Nuevo ícono para admin
 } from "react-icons/fa";
 import LogoEmpresa from "../assets/LogoEmpresa.png";
 import { useAuth } from "../hooks/useAuth";
@@ -17,7 +18,7 @@ import CartModal from "./CartModal";
 import { useCart } from "../context/CartContext";
 
 export default function Navbar() {
-  const { userProfile, logout } = useAuth();
+  const { userProfile, logout, isAdmin } = useAuth();
   const { getTotalItems } = useCart();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -61,6 +62,17 @@ export default function Navbar() {
             <span>Inicio</span>
           </Link>
 
+          {/* Panel de Admin (solo para admins) */}
+          {isAdmin() && (
+            <Link 
+              to="/admin"
+              className="flex items-center gap-2 cursor-pointer hover:text-yellow-400 transition"
+            >
+              <FaShieldAlt className="text-white" />
+              <span>Admin</span>
+            </Link>
+          )}
+
           {/* Carrito */}
           <div className="relative">
             <div 
@@ -69,7 +81,6 @@ export default function Navbar() {
             >
               <div className="relative">
                 <FaShoppingCart size={22} />
-                {/* Badge con cantidad */}
                 {totalItems > 0 && (
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                     {totalItems > 99 ? '99+' : totalItems}
@@ -87,6 +98,14 @@ export default function Navbar() {
               <span className="max-w-32 truncate">
                 {userProfile ? `${userProfile.nombres} ${userProfile.apellidos}` : 'Usuario'}
               </span>
+              {isAdmin() && (
+                <FaShieldAlt 
+                  className={`text-sm ${
+                    userProfile?.rol === 'superadmin' ? 'text-red-400' : 'text-purple-400'
+                  }`} 
+                  title={userProfile?.rol === 'superadmin' ? 'Super Administrador' : 'Administrador'}
+                />
+              )}
               <FaChevronDown className="transform group-hover:rotate-180 transition-transform duration-300" />
             </div>
             
@@ -97,6 +116,13 @@ export default function Navbar() {
                 <p className="font-semibold text-white truncate">
                   {userProfile ? `${userProfile.nombres} ${userProfile.apellidos}` : 'Usuario'}
                 </p>
+                {isAdmin() && (
+                  <p className={`text-xs font-bold mt-1 ${
+                    userProfile?.rol === 'superadmin' ? 'text-red-400' : 'text-purple-400'
+                  }`}>
+                    {userProfile?.rol === 'superadmin' ? 'Super Administrador' : 'Administrador'}
+                  </p>
+                )}
               </div>
               
               <Link
@@ -132,6 +158,18 @@ export default function Navbar() {
                 <span>Inicio</span>
               </Link>
 
+              {/* Panel de Admin (solo para admins) */}
+              {isAdmin() && (
+                <Link 
+                  to="/admin"
+                  className="flex items-center gap-3 text-white text-lg hover:text-yellow-400 transition py-2"
+                  onClick={closeMobileMenu}
+                >
+                  <FaShieldAlt className="text-purple-400" />
+                  <span>Panel Admin</span>
+                </Link>
+              )}
+
               {/* Carrito */}
               <div 
                 className="flex items-center gap-3 text-white text-lg hover:text-yellow-400 transition py-2"
@@ -158,9 +196,24 @@ export default function Navbar() {
                   <span className="truncate flex-1">
                     {userProfile ? `${userProfile.nombres} ${userProfile.apellidos}` : 'Usuario'}
                   </span>
+                  {isAdmin() && (
+                    <FaShieldAlt 
+                      className={`text-sm ${
+                        userProfile?.rol === 'superadmin' ? 'text-red-400' : 'text-purple-400'
+                      }`} 
+                    />
+                  )}
                 </div>
                 
                 <div className="space-y-2 pl-7">
+                  {isAdmin() && (
+                    <div className={`text-xs font-bold py-1 ${
+                      userProfile?.rol === 'superadmin' ? 'text-red-400' : 'text-purple-400'
+                    }`}>
+                      {userProfile?.rol === 'superadmin' ? 'Super Administrador' : 'Administrador'}
+                    </div>
+                  )}
+                  
                   <Link
                     to="/settings"
                     className="flex items-center gap-3 text-white text-base hover:text-yellow-400 transition py-2"

@@ -6,8 +6,10 @@ import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import Principal from './components/Principal'
 import Settings from './components/Settings'
+import AdminPanel from './components/AdminPanel' // Nuevo componente
 import { useAuth } from './hooks/useAuth'
 import { CartProvider } from './context/CartContext'
+import AdminRoute from './components/AdminRoute' // Nuevo componente
 
 // Componente para rutas protegidas
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -48,6 +50,15 @@ function App() {
             <ProtectedRoute>
               <Settings />
             </ProtectedRoute>
+          } 
+        />
+        {/* Nueva ruta protegida para admin */}
+        <Route 
+          path="/admin" 
+          element={
+            <AdminRoute>
+              <AdminPanel />
+            </AdminRoute>
           } 
         />
       </Routes>

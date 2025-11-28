@@ -23,6 +23,7 @@ export interface PerfilResponse {
     idUsuario: number;
     nombres: string;
     apellidos: string;
+    rol?: string;
   };
 }
 
@@ -63,7 +64,7 @@ export type RegistroForm = Pick<RegistroData, 'usuario' | 'pais' | 'nombres' | '
 }
 
 const api = axios.create({
-  baseURL: "http://localhost:4000", 
+  baseURL: "http://localhost:4000",
   headers: {
     "Content-Type": "application/json",
   },
