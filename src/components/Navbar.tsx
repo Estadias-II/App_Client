@@ -1,3 +1,4 @@
+// components/Navbar.tsx (actualizado)
 import { 
   FaShoppingCart, 
   FaUser, 
@@ -5,7 +6,6 @@ import {
   FaSignOutAlt, 
   FaCog, 
   FaHome, 
-  FaTags, 
   FaBars,
   FaTimes 
 } from "react-icons/fa";
@@ -21,16 +21,11 @@ export default function Navbar() {
   const { getTotalItems } = useCart();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
 
   const totalItems = getTotalItems();
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
-  const toggleUserDropdown = () => {
-    setIsUserDropdownOpen(!isUserDropdownOpen);
   };
 
   const closeMobileMenu = () => {
@@ -65,13 +60,6 @@ export default function Navbar() {
             <FaHome />
             <span>Inicio</span>
           </Link>
-
-          {/* Categoría */}
-          <div className="flex items-center gap-2 cursor-pointer hover:text-yellow-400 transition">
-            <FaTags />
-            <span>Categoría</span>
-            <FaChevronDown />
-          </div>
 
           {/* Carrito */}
           <div className="relative">
@@ -143,13 +131,6 @@ export default function Navbar() {
                 <FaHome />
                 <span>Inicio</span>
               </Link>
-
-              {/* Categoría */}
-              <div className="flex items-center gap-3 text-white text-lg hover:text-yellow-400 transition py-2">
-                <FaTags />
-                <span>Categoría</span>
-                <FaChevronDown />
-              </div>
 
               {/* Carrito */}
               <div 

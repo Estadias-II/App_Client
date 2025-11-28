@@ -1,5 +1,9 @@
-import { FaTimes, FaPlus, FaMinus, FaTrash, FaExclamationTriangle } from "react-icons/fa";
+// components/CartModal.tsx (actualizado)
+import { FaTimes, FaPlus, FaMinus, FaTrash, FaExclamationTriangle, FaFilePdf } from "react-icons/fa";
 import { useCart } from "../context/CartContext";
+import { TicketPDFGenerator } from "./TicketPDFGenerator";
+import { useAuth } from "../hooks/useAuth";
+import { useState } from "react";
 
 interface CartModalProps {
   isOpen: boolean;
@@ -8,6 +12,8 @@ interface CartModalProps {
 
 export default function CartModal({ isOpen, onClose }: CartModalProps) {
   const { cartItems, removeFromCart, updateQuantity, getTotalPrice, getTotalItems, canAddMoreItems, clearCart } = useCart();
+  const { userProfile } = useAuth();
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   const getCardImage = (card: any) => {
     if (card.image_uris) {
@@ -30,6 +36,36 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
       return parseFloat(card.prices.eur);
     }
     return 0;
+  };
+
+  const handleGenerateTicket = async () => {
+    if (cartItems.length === 0) {
+      alert('El carrito está vacío');
+      return;
+    }
+
+    setIsGeneratingPDF(true);
+    try {
+      await TicketPDFGenerator.generateTicket({
+        cartItems,
+        totalPrice: getTotalPrice(),
+        totalItems: getTotalItems(),
+        userProfile: userProfile ? {
+          nombres: userProfile.nombres,
+          apellidos: userProfile.apellidos,
+          idUsuario: userProfile.idUsuario
+        } : null
+      });
+      
+      // Opcional: Mostrar mensaje de éxito
+      alert('Ticket generado exitosamente');
+      
+    } catch (error) {
+      console.error('Error al generar ticket:', error);
+      alert('Error al generar el ticket. Intente nuevamente.');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -177,12 +213,30 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
               >
                 Vaciar Carrito
               </button>
+              
+              {/* Botón para generar ticket */}
               <button
-                className="flex-1 bg-yellow-400 text-black font-bold py-3 rounded-lg hover:bg-yellow-500 transition-colors"
+                onClick={handleGenerateTicket}
+                disabled={isGeneratingPDF}
+                className="px-6 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
               >
-                Total: ${getTotalPrice().toFixed(2)}
+                <FaFilePdf className={isGeneratingPDF ? "animate-spin" : ""} />
+                {isGeneratingPDF ? "Generando..." : "Generar Ticket"}
+              </button>
+              
+              <button
+                className="flex-1 bg-yellow-400 text-black font-bold py-3 rounded-lg hover:bg-yellow-500 transition-colors flex items-center justify-center gap-2"
+              >
+                <span>Total: ${getTotalPrice().toFixed(2)}</span>
               </button>
             </div>
+
+            {/* Información del usuario para el ticket */}
+            {userProfile && (
+              <div className="mt-4 text-center text-gray-400 text-sm">
+                Ticket incluirá: {userProfile.nombres} {userProfile.apellidos} (ID: CLI-{userProfile.idUsuario.toString().padStart(6, '0')})
+              </div>
+            )}
           </div>
         )}
       </div>

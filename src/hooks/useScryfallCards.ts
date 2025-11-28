@@ -1,3 +1,4 @@
+// hooks/useScryfallCards.ts (actualizado)
 import { useState, useEffect } from 'react';
 import { scryfallService, type ScryfallCard } from '../api/scryfallApi';
 
