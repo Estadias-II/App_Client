@@ -1,9 +1,11 @@
-// components/CartModal.tsx (actualizado)
-import { FaTimes, FaPlus, FaMinus, FaTrash, FaExclamationTriangle, FaFilePdf } from "react-icons/fa";
+// components/CartModal.tsx
+import { FaTimes, FaPlus, FaMinus, FaTrash, FaExclamationTriangle, FaFilePdf, FaShoppingCart } from "react-icons/fa";
 import { useCart } from "../context/CartContext";
 import { TicketPDFGenerator } from "./TicketPDFGenerator";
 import { useAuth } from "../hooks/useAuth";
 import { useState } from "react";
+import { usePedidos } from "../hooks/usePedidos";
+import { toast } from "react-toastify";
 
 interface CartModalProps {
   isOpen: boolean;
@@ -13,6 +15,7 @@ interface CartModalProps {
 export default function CartModal({ isOpen, onClose }: CartModalProps) {
   const { cartItems, removeFromCart, updateQuantity, getTotalPrice, getTotalItems, canAddMoreItems, clearCart } = useCart();
   const { userProfile } = useAuth();
+  const { crearPedido, loading: creatingOrder } = usePedidos();
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   const getCardImage = (card: any) => {
@@ -40,7 +43,7 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
 
   const handleGenerateTicket = async () => {
     if (cartItems.length === 0) {
-      alert('El carrito está vacío');
+      toast.error('El carrito está vacío');
       return;
     }
 
@@ -57,14 +60,52 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
         } : null
       });
       
-      // Opcional: Mostrar mensaje de éxito
-      alert('Ticket generado exitosamente');
+      toast.success('Ticket generado exitosamente');
       
     } catch (error) {
       console.error('Error al generar ticket:', error);
-      alert('Error al generar el ticket. Intente nuevamente.');
+      toast.error('Error al generar el ticket. Intente nuevamente.');
     } finally {
       setIsGeneratingPDF(false);
+    }
+  };
+
+  const handleCrearPedido = async () => {
+    if (cartItems.length === 0) {
+      toast.error('El carrito está vacío');
+      return;
+    }
+
+    try {
+      // Primero generar el ticket
+      await TicketPDFGenerator.generateTicket({
+        cartItems,
+        totalPrice: getTotalPrice(),
+        totalItems: getTotalItems(),
+        userProfile: userProfile ? {
+          nombres: userProfile.nombres,
+          apellidos: userProfile.apellidos,
+          idUsuario: userProfile.idUsuario
+        } : null
+      });
+
+      // Luego crear el pedido en la base de datos
+      const pedidoData = {
+        items: cartItems,
+        total: getTotalPrice(),
+        totalItems: getTotalItems(),
+        notas: `Pedido creado el ${new Date().toLocaleString()} - Usuario: ${userProfile?.nombres} ${userProfile?.apellidos}`
+      };
+
+      await crearPedido(pedidoData);
+      
+      toast.success('¡Pedido creado exitosamente!');
+      clearCart();
+      onClose();
+      
+    } catch (error: any) {
+      console.error('Error al crear pedido:', error);
+      // El error ya se maneja en el hook usePedidos
     }
   };
 
@@ -102,6 +143,9 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
           {cartItems.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-400 text-lg">Tu carrito está vacío</p>
+              <p className="text-gray-500 text-sm mt-2">
+                Agrega algunas cartas para comenzar
+              </p>
             </div>
           ) : (
             <div className="p-6 space-y-4">
@@ -146,7 +190,8 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
                     <div className="flex items-center gap-3">
                       <button
                         onClick={() => updateQuantity(item.card.id, item.quantity - 1)}
-                        className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center hover:bg-gray-500 transition-colors"
+                        className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center hover:bg-gray-500 transition-colors disabled:opacity-50"
+                        disabled={item.quantity <= 1}
                       >
                         <FaMinus size={12} />
                       </button>
@@ -172,10 +217,11 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
                       </p>
                       <button
                         onClick={() => removeFromCart(item.card.id)}
-                        className="text-red-400 hover:text-red-300 transition-colors mt-1"
+                        className="text-red-400 hover:text-red-300 transition-colors mt-1 flex items-center gap-1 text-xs"
                         title="Eliminar del carrito"
                       >
-                        <FaTrash size={14} />
+                        <FaTrash size={12} />
+                        Eliminar
                       </button>
                     </div>
                   </div>
@@ -206,28 +252,34 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
             )}
             
             {/* Botones */}
-            <div className="flex gap-4">
-              <button
-                onClick={clearCart}
-                className="px-6 py-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Vaciar Carrito
-              </button>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex gap-4">
+                <button
+                  onClick={clearCart}
+                  className="px-6 py-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+                >
+                  <FaTrash />
+                  Vaciar Carrito
+                </button>
+                
+                {/* Botón para generar ticket */}
+                <button
+                  onClick={handleGenerateTicket}
+                  disabled={isGeneratingPDF}
+                  className="px-6 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  <FaFilePdf className={isGeneratingPDF ? "animate-spin" : ""} />
+                  {isGeneratingPDF ? "Generando..." : "Solo Ticket"}
+                </button>
+              </div>
               
-              {/* Botón para generar ticket */}
               <button
-                onClick={handleGenerateTicket}
-                disabled={isGeneratingPDF}
-                className="px-6 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                onClick={handleCrearPedido}
+                disabled={creatingOrder}
+                className="flex-1 bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                <FaFilePdf className={isGeneratingPDF ? "animate-spin" : ""} />
-                {isGeneratingPDF ? "Generando..." : "Generar Ticket"}
-              </button>
-              
-              <button
-                className="flex-1 bg-yellow-400 text-black font-bold py-3 rounded-lg hover:bg-yellow-500 transition-colors flex items-center justify-center gap-2"
-              >
-                <span>Total: ${getTotalPrice().toFixed(2)}</span>
+                <FaShoppingCart className={creatingOrder ? "animate-spin" : ""} />
+                {creatingOrder ? "Creando Pedido..." : `Crear Pedido - $${getTotalPrice().toFixed(2)}`}
               </button>
             </div>
 
