@@ -1,8 +1,19 @@
-import { FaTimes, FaShoppingCart, FaDollarSign, FaMagnet, FaExclamationTriangle } from "react-icons/fa";
+import { 
+  FaTimes, 
+  FaShoppingCart, 
+  FaDollarSign, 
+  FaMagnet, 
+  FaExclamationTriangle,
+  FaBox,
+  FaQuestionCircle,
+  FaStore,
+  FaBan
+} from "react-icons/fa";
 import { useCart } from "../context/CartContext";
+import { type CartaCombinada } from "../hooks/useScryfallCards";
 
 interface CardDetailsModalProps {
-  card: any;
+  card: CartaCombinada;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -22,7 +33,18 @@ export default function CardDetailsModal({ card, isOpen, onClose }: CardDetailsM
     return null;
   };
 
-  const getCardPrice = (card: any) => {
+  // FUNCIÓN CORREGIDA: Obtener precio considerando gestión
+  const getCardPrice = (card: CartaCombinada): number => {
+    // Priorizar precio personalizado, luego precio Scryfall de gestión, luego precio original de Scryfall
+    if (card.gestion?.precioPersonalizado) {
+      // Asegurarnos de que es un número
+      const precio = card.gestion.precioPersonalizado;
+      return typeof precio === 'string' ? parseFloat(precio) : Number(precio);
+    }
+    if (card.gestion?.precioScryfall) {
+      const precio = card.gestion.precioScryfall;
+      return typeof precio === 'string' ? parseFloat(precio) : Number(precio);
+    }
     if (card.prices?.usd) {
       return parseFloat(card.prices.usd);
     }
@@ -35,22 +57,111 @@ export default function CardDetailsModal({ card, isOpen, onClose }: CardDetailsM
     return 0;
   };
 
-  const isCardAvailable = (card: any) => {
+  // FUNCIÓN ACTUALIZADA: Determinar disponibilidad
+  const isCardAvailable = (card: CartaCombinada) => {
+    // Si tiene gestión y está activa para venta
+    if (card.gestion) {
+      return card.gestion.activaVenta && card.gestion.stockLocal > 0;
+    }
+    // Si no tiene gestión, usar disponibilidad de Scryfall
     return card.prices?.usd || card.prices?.usd_foil || card.prices?.eur;
   };
 
+  // FUNCIÓN NUEVA: Obtener información de disponibilidad
+  const getAvailabilityInfo = () => {
+    if (!card.gestion) {
+      return {
+        status: "consultar",
+        text: "Disponible por pedido",
+        description: "Esta carta no está en nuestro inventario local, pero podemos conseguirla para ti.",
+        color: "text-blue-400",
+        bgColor: "bg-blue-900/30",
+        icon: FaQuestionCircle
+      };
+    }
+
+    if (!card.gestion.activaVenta) {
+      return {
+        status: "no-disponible",
+        text: "No disponible actualmente",
+        description: "Esta carta está temporalmente fuera de venta.",
+        color: "text-red-400",
+        bgColor: "bg-red-900/30",
+        icon: FaBan
+      };
+    }
+
+    if (card.gestion.stockLocal === 0) {
+      return {
+        status: "sin-stock",
+        text: "Sin stock",
+        description: "Agotado temporalmente. Próxima reposición pronto.",
+        color: "text-orange-400",
+        bgColor: "bg-orange-900/30",
+        icon: FaExclamationTriangle
+      };
+    }
+
+    if (card.gestion.stockLocal < 5) {
+      return {
+        status: "stock-bajo",
+        text: `Stock bajo (${card.gestion.stockLocal} unidades)`,
+        description: "Quedan pocas unidades disponibles.",
+        color: "text-yellow-400",
+        bgColor: "bg-yellow-900/30",
+        icon: FaExclamationTriangle
+      };
+    }
+
+    return {
+      status: "en-stock",
+      text: `En stock (${card.gestion.stockLocal} unidades)`,
+      description: "Disponible para entrega inmediata.",
+      color: "text-green-400",
+      bgColor: "bg-green-900/30",
+      icon: FaBox
+    };
+  };
+
+  // FUNCIÓN CORREGIDA: Obtener texto del botón
+  const getButtonText = () => {
+    if (!canAddMoreItems()) {
+      return "Carrito lleno";
+    }
+
+    const availability = getAvailabilityInfo();
+    const price = getCardPrice(card);
+    
+    switch (availability.status) {
+      case "en-stock":
+      case "stock-bajo":
+        return `Agregar al carrito - $${price.toFixed(2)}`;
+      case "sin-stock":
+        return "Sin stock";
+      case "no-disponible":
+        return "No disponible";
+      case "consultar":
+        return "Consultar disponibilidad";
+      default:
+        return "No disponible";
+    }
+  };
+
   const handleAddToCart = () => {
-    if (isCardAvailable(card) && canAddMoreItems()) {
+    const availability = getAvailabilityInfo();
+    
+    // Solo permitir agregar al carrito si está en stock
+    if ((availability.status === "en-stock" || availability.status === "stock-bajo") && canAddMoreItems()) {
       addToCart(card);
       onClose();
-      // Aquí podrías agregar un toast de confirmación
     }
   };
 
   const imageUrl = getCardImage(card);
-  const price = getCardPrice(card);
   const available = isCardAvailable(card);
   const canAddToCart = canAddMoreItems();
+  const availabilityInfo = getAvailabilityInfo();
+  const AvailabilityIcon = availabilityInfo.icon;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
@@ -86,25 +197,36 @@ export default function CardDetailsModal({ card, isOpen, onClose }: CardDetailsM
                   </div>
                 )}
               </div>
+
+              {/* Información de disponibilidad */}
+              <div className={`w-full max-w-sm mt-4 p-4 rounded-lg border ${availabilityInfo.bgColor} border-current`}>
+                <div className="flex items-center gap-3">
+                  <AvailabilityIcon className={availabilityInfo.color} />
+                  <div>
+                    <h3 className={`font-bold ${availabilityInfo.color}`}>
+                      {availabilityInfo.text}
+                    </h3>
+                    <p className="text-gray-300 text-sm mt-1">
+                      {availabilityInfo.description}
+                    </p>
+                  </div>
+                </div>
+              </div>
               
               {/* Botón agregar al carrito */}
               <button
                 onClick={handleAddToCart}
-                disabled={!available || !canAddToCart}
+                disabled={!available || !canAddToCart || availabilityInfo.status === "no-disponible" || availabilityInfo.status === "sin-stock" || availabilityInfo.status === "consultar"}
                 className={`mt-6 w-full max-w-sm py-3 px-6 rounded-lg font-bold flex items-center justify-center gap-2 transition-colors ${
-                  available && canAddToCart
+                  available && canAddToCart && (availabilityInfo.status === "en-stock" || availabilityInfo.status === "stock-bajo")
                     ? "bg-yellow-400 text-black hover:bg-yellow-500"
+                    : availabilityInfo.status === "consultar"
+                    ? "bg-blue-600 text-white hover:bg-blue-700"
                     : "bg-gray-600 text-gray-400 cursor-not-allowed"
                 }`}
               >
                 <FaShoppingCart />
-                {!canAddToCart ? (
-                  <span>Carrito lleno</span>
-                ) : available ? (
-                  `Agregar al carrito - $${price.toFixed(2)}`
-                ) : (
-                  "No disponible"
-                )}
+                {getButtonText()}
               </button>
 
               {/* Mensaje de límite del carrito */}
@@ -116,7 +238,6 @@ export default function CardDetailsModal({ card, isOpen, onClose }: CardDetailsM
               )}
             </div>
 
-            {/* ... (el resto del código permanece igual) ... */}
             {/* Columna derecha - Información detallada */}
             <div className="space-y-6">
               {/* Nombre y costo de maná */}
@@ -150,6 +271,44 @@ export default function CardDetailsModal({ card, isOpen, onClose }: CardDetailsM
                   </p>
                 </div>
               </div>
+
+              {/* Información de gestión (si aplica) */}
+              {card.gestion && (
+                <div className="bg-[#2a2a2a] rounded-lg p-4 border border-gray-600">
+                  <h3 className="text-gray-400 text-sm font-semibold mb-3 flex items-center gap-2">
+                    <FaStore className="text-yellow-400" />
+                    Información de la Tienda
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-400">Stock local:</span>
+                      <p className={`font-bold ${
+                        card.gestion.stockLocal === 0 ? 'text-red-400' :
+                        card.gestion.stockLocal < 5 ? 'text-yellow-400' :
+                        'text-green-400'
+                      }`}>
+                        {card.gestion.stockLocal} unidades
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Estado:</span>
+                      <p className={`font-bold ${
+                        card.gestion.activaVenta ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {card.gestion.activaVenta ? 'Activa' : 'Inactiva'}
+                      </p>
+                    </div>
+                    {card.gestion.precioPersonalizado && (
+                      <div className="col-span-2">
+                        <span className="text-gray-400">Precio local:</span>
+                        <p className="text-yellow-400 font-bold text-lg">
+                          ${getCardPrice(card).toFixed(2)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Estadísticas (si es criatura) */}
               {(card.power || card.toughness) && (
@@ -198,13 +357,25 @@ export default function CardDetailsModal({ card, isOpen, onClose }: CardDetailsM
               <div>
                 <h3 className="text-gray-400 text-sm font-semibold mb-2">Precios</h3>
                 <div className="space-y-2">
-                  {card.prices?.usd && (
-                    <div className="flex items-center gap-2">
-                      <FaDollarSign className="text-green-400" />
-                      <span className="text-white">Standard: </span>
-                      <span className="text-green-400 font-bold">${card.prices.usd}</span>
+                  {/* Precio local (si existe) */}
+                  {card.gestion?.precioPersonalizado && (
+                    <div className="flex items-center gap-2 bg-yellow-900/30 p-2 rounded">
+                      <FaDollarSign className="text-yellow-400" />
+                      <span className="text-white">Precio local: </span>
+                      <span className="text-yellow-400 font-bold">${getCardPrice(card).toFixed(2)}</span>
                     </div>
                   )}
+                  
+                  {/* Precio de mercado (cuando no hay precio local) */}
+                  {!card.gestion?.precioPersonalizado && getCardPrice(card) > 0 && (
+                    <div className="flex items-center gap-2 bg-green-900/30 p-2 rounded">
+                      <FaDollarSign className="text-green-400" />
+                      <span className="text-white">Precio de mercado: </span>
+                      <span className="text-green-400 font-bold">${getCardPrice(card).toFixed(2)}</span>
+                    </div>
+                  )}
+                  
+                  {/* Precios de Scryfall adicionales */}
                   {card.prices?.usd_foil && (
                     <div className="flex items-center gap-2">
                       <FaDollarSign className="text-blue-400" />

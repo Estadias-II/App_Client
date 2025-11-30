@@ -1,50 +1,53 @@
-// components/Principal.tsx
+// components/Principal.tsx (ACTUALIZADO)
 import LogoEmpresa from "../assets/LogoEmpresa.png";
 import Navbar from "./Navbar";
 import { useAuth } from "../hooks/useAuth";
-import { useScryfallCards } from "../hooks/useScryfallCards";
+import { useScryfallCards, type CartaCombinada } from "../hooks/useScryfallCards";
 import { useScryfallCategories, type CategoryOption } from "../hooks/useScryfallCategories";
 import { useState } from "react";
-import { 
-  FaSearch, 
-  FaSync, 
-  FaStar, 
-  FaDollarSign, 
-  FaEllipsisV, 
+import {
+  FaSearch,
+  FaSync,
+  FaStar,
+  FaDollarSign,
+  FaEllipsisV,
   FaFilter,
   FaChevronDown,
   FaChevronUp,
   FaTimes,
-  FaExclamationTriangle
+  FaExclamationTriangle,
+  FaShoppingCart,
+  FaBox,
+  FaQuestionCircle
 } from "react-icons/fa";
 import { useCart } from "../context/CartContext";
 import CardDetailsModal from "./CardDetailsModal";
 
 export default function Principal() {
   const { isAuthenticated, userProfile, loading: authLoading } = useAuth();
-  const { 
-    cards, 
-    loading: cardsLoading, 
-    error: cardsError, 
-    loadRandomCards, 
+  const {
+    cards,
+    loading: cardsLoading,
+    error: cardsError,
+    loadRandomCards,
     loadPopularCards,
-    searchCards 
+    searchCards
   } = useScryfallCards();
-  
-  const { 
-    categories, 
-    loading: categoriesLoading, 
-    error: categoriesError 
+
+  const {
+    categories,
+    loading: categoriesLoading,
+    error: categoriesError
   } = useScryfallCategories();
-  
+
   const { addToCart } = useCart();
-  
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCard, setSelectedCard] = useState<any>(null);
   const [showCardMenu, setShowCardMenu] = useState<string | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [activeCategories, setActiveCategories] = useState<{[key: string]: boolean}>({});
-  const [selectedFilters, setSelectedFilters] = useState<{[key: string]: string[]}>({});
+  const [activeCategories, setActiveCategories] = useState<{ [key: string]: boolean }>({});
+  const [selectedFilters, setSelectedFilters] = useState<{ [key: string]: string[] }>({});
   const [showFilters, setShowFilters] = useState(false);
 
   // Si está cargando la autenticación, mostrar loading
@@ -93,7 +96,7 @@ export default function Principal() {
     setSelectedFilters(prev => {
       const currentFilters = prev[categoryKey] || [];
       const newFilters = currentFilters.filter(f => f !== filterValue);
-      
+
       if (newFilters.length === 0) {
         const { [categoryKey]: removed, ...rest } = prev;
         return rest;
@@ -113,8 +116,8 @@ export default function Principal() {
 
   // Obtener todos los filtros activos para mostrar
   const getAllActiveFilters = () => {
-    const activeFilters: Array<{categoryKey: string, filterValue: string, label: string}> = [];
-    
+    const activeFilters: Array<{ categoryKey: string, filterValue: string, label: string }> = [];
+
     Object.entries(selectedFilters).forEach(([categoryKey, filters]) => {
       filters.forEach(filterValue => {
         const category = categories[categoryKey];
@@ -128,7 +131,7 @@ export default function Principal() {
         }
       });
     });
-    
+
     return activeFilters;
   };
 
@@ -142,24 +145,45 @@ export default function Principal() {
     return null;
   };
 
-  const getCardPrice = (card: any) => {
+  // FUNCIÓN ACTUALIZADA: Obtener precio considerando gestión
+  const getCardPrice = (card: CartaCombinada) => {
+    // Priorizar precio personalizado, luego precio Scryfall de gestión, luego precio original de Scryfall
+    if (card.gestion?.precioPersonalizado) {
+      const precio = typeof card.gestion.precioPersonalizado === 'string'
+        ? parseFloat(card.gestion.precioPersonalizado)
+        : Number(card.gestion.precioPersonalizado);
+      return `$${precio.toFixed(2)} (Precio local)`;
+    }
+    if (card.gestion?.precioScryfall) {
+      const precio = typeof card.gestion.precioScryfall === 'string'
+        ? parseFloat(card.gestion.precioScryfall)
+        : Number(card.gestion.precioScryfall);
+      return `$${precio.toFixed(2)} (Precio de mercado)`;
+    }
     if (card.prices?.usd) {
-      return `$${card.prices.usd}`;
+      return `$${card.prices.usd} (Precio de mercado)`;
     }
     if (card.prices?.usd_foil) {
       return `$${card.prices.usd_foil} (Foil)`;
     }
     if (card.prices?.eur) {
-      return `€${card.prices.eur}`;
+      return `€${card.prices.eur} (Euro)`;
     }
-    return "No disponible";
+    return "Consultar precio";
   };
 
-  const isCardAvailable = (card: any) => {
+  // FUNCIÓN ACTUALIZADA: Determinar disponibilidad
+  const isCardAvailable = (card: CartaCombinada) => {
+    // Si tiene gestión y está activa para venta
+    if (card.gestion) {
+      return card.gestion.activaVenta && card.gestion.stockLocal > 0;
+    }
+    // Si no tiene gestión, usar disponibilidad de Scryfall
     return card.prices?.usd || card.prices?.usd_foil || card.prices?.eur;
   };
 
-  const handleAddToCart = (card: any, e: React.MouseEvent) => {
+  // FUNCIÓN ACTUALIZADA: Manejar agregar al carrito
+  const handleAddToCart = (card: CartaCombinada, e: React.MouseEvent) => {
     e.stopPropagation();
     if (isCardAvailable(card)) {
       addToCart(card);
@@ -177,6 +201,61 @@ export default function Principal() {
   const handleCardClick = (card: any) => {
     setSelectedCard(card);
     setShowDetailsModal(true);
+  };
+
+  // FUNCIÓN NUEVA: Obtener badge de estado
+  const getStatusBadge = (card: CartaCombinada) => {
+    if (!card.gestion) {
+      return {
+        text: "Disponible por pedido",
+        color: "bg-blue-500 text-white",
+        icon: FaQuestionCircle
+      };
+    }
+
+    if (!card.gestion.activaVenta) {
+      return {
+        text: "No disponible",
+        color: "bg-red-500 text-white",
+        icon: FaTimes
+      };
+    }
+
+    if (card.gestion.stockLocal === 0) {
+      return {
+        text: "Sin stock",
+        color: "bg-orange-500 text-white",
+        icon: FaExclamationTriangle
+      };
+    }
+
+    if (card.gestion.stockLocal < 5) {
+      return {
+        text: `Stock bajo (${card.gestion.stockLocal})`,
+        color: "bg-yellow-500 text-black",
+        icon: FaExclamationTriangle
+      };
+    }
+
+    return {
+      text: `En stock (${card.gestion.stockLocal})`,
+      color: "bg-green-500 text-white",
+      icon: FaBox
+    };
+  };
+
+  // FUNCIÓN NUEVA: Obtener texto del botón de carrito
+  const getCartButtonText = (card: CartaCombinada) => {
+    if (!isCardAvailable(card)) {
+      if (card.gestion && !card.gestion.activaVenta) {
+        return "No disponible";
+      }
+      if (card.gestion && card.gestion.stockLocal === 0) {
+        return "Sin stock";
+      }
+      return "Consultar precio";
+    }
+    return "Agregar al carrito";
   };
 
   const activeFilters = getAllActiveFilters();
@@ -264,11 +343,10 @@ export default function Principal() {
               </button>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`px-6 py-3 font-bold rounded-lg transition-colors flex items-center gap-2 ${
-                  totalActiveFilters > 0
+                className={`px-6 py-3 font-bold rounded-lg transition-colors flex items-center gap-2 ${totalActiveFilters > 0
                     ? 'bg-orange-500 text-white hover:bg-orange-600'
                     : 'bg-green-600 text-white hover:bg-green-700'
-                }`}
+                  }`}
               >
                 <FaFilter />
                 {showFilters ? "Ocultar Filtros" : "Mostrar Filtros"}
@@ -312,11 +390,10 @@ export default function Principal() {
                     <div key={key} className="relative">
                       <button
                         onClick={() => toggleCategory(key)}
-                        className={`w-full flex justify-between items-center p-3 rounded-lg transition-colors ${
-                          selectedFilters[key]?.length > 0
-                            ? 'bg-yellow-500 text-white font-bold' 
+                        className={`w-full flex justify-between items-center p-3 rounded-lg transition-colors ${selectedFilters[key]?.length > 0
+                            ? 'bg-yellow-500 text-white font-bold'
                             : 'bg-[#2a2a2a] text-white hover:bg-[#3a3a3a]'
-                        }`}
+                          }`}
                       >
                         <span>{category.name}</span>
                         <div className="flex items-center gap-2">
@@ -328,7 +405,7 @@ export default function Principal() {
                           {activeCategories[key] ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
                         </div>
                       </button>
-                      
+
                       {/* Lista flotante */}
                       {activeCategories[key] && (
                         <div className="absolute top-full left-0 right-0 mt-1 bg-[#2a2a2a] border border-yellow-400 rounded-lg shadow-xl z-20 max-h-60 overflow-y-auto">
@@ -337,11 +414,10 @@ export default function Principal() {
                               <button
                                 key={option.value}
                                 onClick={() => handleCategorySearch(option.value, key)}
-                                className={`w-full text-left p-2 rounded transition-colors flex items-center justify-between ${
-                                  isFilterActive(key, option.value)
+                                className={`w-full text-left p-2 rounded transition-colors flex items-center justify-between ${isFilterActive(key, option.value)
                                     ? 'bg-yellow-500 text-white font-bold'
                                     : 'bg-[#2a2a2a] text-white hover:bg-[#3a3a3a]'
-                                }`}
+                                  }`}
                               >
                                 <span className="truncate">{option.label}</span>
                                 {isFilterActive(key, option.value) && (
@@ -412,13 +488,23 @@ export default function Principal() {
             {cards.map((card) => {
               const imageUrl = getCardImage(card);
               const available = isCardAvailable(card);
-              
+              const statusBadge = getStatusBadge(card);
+              const StatusIcon = statusBadge.icon;
+
               return (
                 <div
                   key={card.id}
                   className="bg-[#1a1a1a] rounded-lg overflow-hidden border border-gray-700 hover:cursor-pointer hover:border-yellow-400 transition-all duration-300 hover:shadow-2xl hover:shadow-yellow-400/20 relative group"
                   onClick={() => handleCardClick(card)}
                 >
+                  {/* Badge de estado */}
+                  <div className="absolute top-2 left-2 z-10">
+                    <span className={`${statusBadge.color} px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1`}>
+                      <StatusIcon size={10} />
+                      {statusBadge.text}
+                    </span>
+                  </div>
+
                   {/* Imagen de la carta */}
                   <div className="aspect-[0.72] bg-gray-800 relative">
                     {imageUrl ? (
@@ -452,18 +538,19 @@ export default function Principal() {
                           <button
                             onClick={(e) => handleAddToCart(card, e)}
                             disabled={!available}
-                            className={`w-full text-left px-4 py-3 text-sm transition-colors ${
-                              available 
-                                ? "text-white hover:bg-yellow-400 hover:text-black" 
+                            className={`w-full text-left px-4 py-3 text-sm transition-colors flex items-center gap-2 ${available
+                                ? "text-white hover:bg-yellow-400 hover:text-black"
                                 : "text-gray-500 cursor-not-allowed"
-                            }`}
+                              }`}
                           >
-                            {available ? "Agregar al carrito" : "No disponible"}
+                            <FaShoppingCart size={12} />
+                            {getCartButtonText(card)}
                           </button>
                           <button
                             onClick={(e) => handleViewDetails(card, e)}
-                            className="w-full text-left px-4 py-3 text-sm text-white hover:bg-yellow-400 hover:text-black transition-colors border-t border-gray-600"
+                            className="w-full text-left px-4 py-3 text-sm text-white hover:bg-yellow-400 hover:text-black transition-colors border-t border-gray-600 flex items-center gap-2"
                           >
+                            <FaSearch size={12} />
                             Ver detalles
                           </button>
                         </div>
@@ -476,7 +563,7 @@ export default function Principal() {
                     <h3 className="font-bold text-white text-lg mb-2 line-clamp-2">
                       {card.name}
                     </h3>
-                    
+
                     <div className="space-y-2 text-sm text-gray-300">
                       {/* Costo de maná */}
                       {card.mana_cost && (
@@ -485,29 +572,27 @@ export default function Principal() {
                           <span className="text-yellow-400">{card.mana_cost}</span>
                         </div>
                       )}
-                      
+
                       {/* Tipo */}
                       <div className="flex items-center gap-1">
                         <span className="font-semibold">Tipo:</span>
                         <span className="line-clamp-1">{card.type_line}</span>
                       </div>
-                      
+
                       {/* Rareza */}
                       <div className="flex items-center gap-1">
                         <span className="font-semibold">Rareza:</span>
-                        <span className={`${
-                          card.rarity === 'mythic' ? 'text-purple-400' :
-                          card.rarity === 'rare' ? 'text-yellow-400' :
-                          card.rarity === 'uncommon' ? 'text-gray-300' :
-                          'text-gray-400'
-                        }`}>
+                        <span className={`${card.rarity === 'mythic' ? 'text-purple-400' :
+                            card.rarity === 'rare' ? 'text-yellow-400' :
+                              card.rarity === 'uncommon' ? 'text-gray-300' :
+                                'text-gray-400'
+                          }`}>
                           {card.rarity}
                         </span>
                       </div>
-                      
+
                       {/* Precio */}
                       <div className="flex items-center gap-1">
-                        <FaDollarSign className="text-green-400" />
                         <span className="font-semibold text-green-400">
                           {getCardPrice(card)}
                         </span>
@@ -547,7 +632,7 @@ export default function Principal() {
       </main>
 
       {/* Modal de detalles de la carta */}
-      <CardDetailsModal 
+      <CardDetailsModal
         card={selectedCard}
         isOpen={showDetailsModal}
         onClose={() => setShowDetailsModal(false)}
