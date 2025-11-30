@@ -10,6 +10,7 @@ import AdminPanel from './components/AdminPanel' // Nuevo componente
 import { useAuth } from './hooks/useAuth'
 import { CartProvider } from './context/CartContext'
 import AdminRoute from './components/AdminRoute' // Nuevo componente
+import MisCotizaciones from './components/MisCotizaciones'
 
 // Componente para rutas protegidas
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -41,6 +42,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Principal />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/mis-cotizaciones"
+          element={
+            <ProtectedRoute>
+              <MisCotizaciones />
             </ProtectedRoute>
           }
         />

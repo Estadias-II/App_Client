@@ -1,4 +1,3 @@
-// components/Navbar.tsx (actualizado)
 import { 
   FaShoppingCart, 
   FaUser, 
@@ -8,7 +7,8 @@ import {
   FaHome, 
   FaBars,
   FaTimes,
-  FaShieldAlt // Nuevo ícono para admin
+  FaShieldAlt,
+  FaPaperPlane // Nuevo ícono para cotizaciones
 } from "react-icons/fa";
 import LogoEmpresa from "../assets/LogoEmpresa.png";
 import { useAuth } from "../hooks/useAuth";
@@ -60,6 +60,15 @@ export default function Navbar() {
           >
             <FaHome />
             <span>Inicio</span>
+          </Link>
+
+          {/* Mis Cotizaciones */}
+          <Link 
+            to="/mis-cotizaciones"
+            className="flex items-center gap-2 cursor-pointer hover:text-yellow-400 transition"
+          >
+            <FaPaperPlane />
+            <span>Mis Cotizaciones</span>
           </Link>
 
           {/* Panel de Admin (solo para admins) */}
@@ -126,6 +135,14 @@ export default function Navbar() {
               </div>
               
               <Link
+                to="/mis-cotizaciones"
+                className="w-full flex items-center gap-3 px-4 py-3 text-left text-white hover:bg-yellow-400 hover:text-black transition-colors border-b border-gray-600"
+              >
+                <FaPaperPlane />
+                <span>Mis Cotizaciones</span>
+              </Link>
+              
+              <Link
                 to="/settings"
                 className="w-full flex items-center gap-3 px-4 py-3 text-left text-white hover:bg-yellow-400 hover:text-black transition-colors border-b border-gray-600"
               >
@@ -156,6 +173,16 @@ export default function Navbar() {
               >
                 <FaHome />
                 <span>Inicio</span>
+              </Link>
+
+              {/* Mis Cotizaciones */}
+              <Link 
+                to="/mis-cotizaciones"
+                className="flex items-center gap-3 text-white text-lg hover:text-yellow-400 transition py-2"
+                onClick={closeMobileMenu}
+              >
+                <FaPaperPlane />
+                <span>Mis Cotizaciones</span>
               </Link>
 
               {/* Panel de Admin (solo para admins) */}
@@ -213,6 +240,15 @@ export default function Navbar() {
                       {userProfile?.rol === 'superadmin' ? 'Super Administrador' : 'Administrador'}
                     </div>
                   )}
+                  
+                  <Link
+                    to="/mis-cotizaciones"
+                    className="flex items-center gap-3 text-white text-base hover:text-yellow-400 transition py-2"
+                    onClick={closeMobileMenu}
+                  >
+                    <FaPaperPlane />
+                    <span>Mis Cotizaciones</span>
+                  </Link>
                   
                   <Link
                     to="/settings"

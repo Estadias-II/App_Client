@@ -10,7 +10,8 @@ import {
     FaCog,
     FaBars,
     FaTimes,
-    FaSignOutAlt
+    FaSignOutAlt,
+    FaPaperPlane
 } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -30,6 +31,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         { path: '/admin/pedidos', icon: FaShoppingCart, label: 'Pedidos' },
         { path: '/admin/reportes', icon: FaChartBar, label: 'Reportes' },
         { path: '/admin/configuracion', icon: FaCog, label: 'Configuración' },
+        { path: '/admin/cotizaciones', icon: FaPaperPlane, label: 'Cotizaciones' },
     ];
 
     const isActive = (path: string, exact: boolean = false) => {
