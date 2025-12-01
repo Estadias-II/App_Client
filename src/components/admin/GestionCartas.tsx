@@ -118,13 +118,13 @@ export default function GestionCartas() {
         }
     };
 
-    const getStockColor = (stock: number, estadoStock: string) => {
+    const getStockColor = (estadoStock: string) => {
         if (estadoStock === 'bajo') return 'text-red-400';
         if (estadoStock === 'medio') return 'text-yellow-400';
         return 'text-green-400';
     };
 
-    const getStockBgColor = (stock: number, estadoStock: string) => {
+    const getStockBgColor = (estadoStock: string) => {
         if (estadoStock === 'bajo') return 'bg-red-900/30';
         if (estadoStock === 'medio') return 'bg-yellow-900/30';
         return 'bg-green-900/30';
@@ -417,7 +417,7 @@ export default function GestionCartas() {
                                             ) : (
                                                 <div className="flex items-center gap-2">
                                                     <div
-                                                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStockBgColor(carta.stockLocal, carta.estadoStock)} ${getStockColor(carta.stockLocal, carta.estadoStock)} cursor-pointer`}
+                                                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStockBgColor(carta.estadoStock)} ${getStockColor(carta.estadoStock)} cursor-pointer`}
                                                         onClick={() => startEditingStock(carta)}
                                                         title="Haz clic para editar stock"
                                                     >

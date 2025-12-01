@@ -2,8 +2,9 @@
 import { useState, useEffect } from 'react';
 import { useAdminUsuarios } from '../../hooks/useAdminUsuarios';
 import { useAuth } from '../../hooks/useAuth';
-import { FaPlus, FaUserShield, FaUser, FaSearch } from 'react-icons/fa';
+import { FaPlus, FaUserShield, FaUser, FaSearch, FaChevronDown } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import { PAISES, validarCodigoPostal, formatearCodigoPostal } from '../../constants/paises';
 
 interface CreateAdminForm {
     nombres: string;
@@ -25,6 +26,7 @@ export default function GestionUsuarios() {
     const [searchQuery, setSearchQuery] = useState('');
     const [filteredUsuarios, setFilteredUsuarios] = useState(usuarios);
     const [creating, setCreating] = useState(false);
+    const [ejemploCodigoPostal, setEjemploCodigoPostal] = useState("Ej: 12345");
 
     const [formData, setFormData] = useState<CreateAdminForm>({
         nombres: '',
@@ -55,6 +57,37 @@ export default function GestionUsuarios() {
         setFilteredUsuarios(filtered);
     }, [searchQuery, usuarios]);
 
+    // Actualizar ejemplo de código postal cuando cambia el país
+    useEffect(() => {
+        if (formData.pais) {
+            const pais = PAISES.find(p => p.value === formData.pais);
+            setEjemploCodigoPostal(pais ? `Ej: ${pais.codigoPostalEjemplo}` : "Ej: 12345");
+        } else {
+            setEjemploCodigoPostal("Ej: 12345");
+        }
+    }, [formData.pais]);
+
+    const getPaisBandera = (codigoPais: string) => {
+        const pais = PAISES.find(p => p.value === codigoPais);
+        return pais ? pais.bandera : '🌍';
+    };
+
+    const getPaisLabel = (codigoPais: string) => {
+        const pais = PAISES.find(p => p.value === codigoPais);
+        return pais ? pais.label : codigoPais;
+    };
+
+    // Función para formatear código postal mientras se escribe
+    const handleCodigoPostalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        if (formData.pais && value) {
+            const formateado = formatearCodigoPostal(value, formData.pais);
+            setFormData({ ...formData, codigoPostal: formateado });
+        } else {
+            setFormData({ ...formData, codigoPostal: value });
+        }
+    };
+
     const handleCreateAdmin = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -63,8 +96,23 @@ export default function GestionUsuarios() {
             return;
         }
 
-        if (formData.contraseña.length < 6) {
-            toast.error('La contraseña debe tener al menos 6 caracteres');
+        if (formData.contraseña.length < 8) {
+            toast.error('La contraseña debe tener al menos 8 caracteres');
+            return;
+        }
+
+        // Validar código postal
+        if (formData.pais && formData.codigoPostal) {
+            if (!validarCodigoPostal(formData.codigoPostal, formData.pais)) {
+                const pais = PAISES.find(p => p.value === formData.pais);
+                toast.error(`Código postal inválido para ${pais?.label}. Formato esperado: ${pais?.codigoPostalEjemplo}`);
+                return;
+            }
+        }
+
+        // Validar longitud del código postal
+        if (formData.codigoPostal.length < 3 || formData.codigoPostal.length > 12) {
+            toast.error('El código postal debe tener entre 3 y 12 caracteres');
             return;
         }
 
@@ -225,7 +273,9 @@ export default function GestionUsuarios() {
                                 value={formData.contraseña}
                                 onChange={(e) => setFormData({ ...formData, contraseña: e.target.value })}
                                 className="w-full px-4 py-2 bg-[#2a2a2a] border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400"
+                                placeholder="Mínimo 8 caracteres"
                             />
+                            <p className="text-xs text-gray-400 mt-1">Mínimo 8 caracteres</p>
                         </div>
 
                         <div>
@@ -258,18 +308,22 @@ export default function GestionUsuarios() {
                             <label className="block text-sm font-medium text-gray-300 mb-2">
                                 País *
                             </label>
-                            <select
-                                required
-                                value={formData.pais}
-                                onChange={(e) => setFormData({ ...formData, pais: e.target.value })}
-                                className="w-full px-4 py-2 bg-[#2a2a2a] border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-400"
-                            >
-                                <option value="mx">México</option>
-                                <option value="us">Estados Unidos</option>
-                                <option value="es">España</option>
-                                <option value="ar">Argentina</option>
-                                <option value="co">Colombia</option>
-                            </select>
+                            <div className="relative">
+                                <select
+                                    required
+                                    value={formData.pais}
+                                    onChange={(e) => setFormData({ ...formData, pais: e.target.value })}
+                                    className="w-full px-4 py-2 bg-[#2a2a2a] border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-400 appearance-none"
+                                >
+                                    <option value="">Selecciona un país</option>
+                                    {PAISES.map((pais) => (
+                                        <option key={pais.value} value={pais.value}>
+                                            {pais.bandera} {pais.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                <FaChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                            </div>
                         </div>
 
                         <div>
@@ -293,9 +347,13 @@ export default function GestionUsuarios() {
                                 type="text"
                                 required
                                 value={formData.codigoPostal}
-                                onChange={(e) => setFormData({ ...formData, codigoPostal: e.target.value })}
+                                onChange={handleCodigoPostalChange}
                                 className="w-full px-4 py-2 bg-[#2a2a2a] border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400"
+                                placeholder={ejemploCodigoPostal}
                             />
+                            <p className="text-xs text-gray-400 mt-1">
+                                {formData.pais ? `Formato: ${PAISES.find(p => p.value === formData.pais)?.codigoPostalEjemplo}` : "Selecciona un país primero"}
+                            </p>
                         </div>
 
                         <div className="md:col-span-2 flex gap-4 pt-4">
@@ -351,6 +409,9 @@ export default function GestionUsuarios() {
                                     Contacto
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                    País
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                                     Rol
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
@@ -377,7 +438,13 @@ export default function GestionUsuarios() {
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm text-white">{usuario.correo}</div>
                                         <div className="text-sm text-gray-400">
-                                            {usuario.ciudad}, {usuario.pais}
+                                            {usuario.ciudad}, {getPaisLabel(usuario.pais)}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xl">{getPaisBandera(usuario.pais)}</span>
+                                            <span className="text-sm text-white">{getPaisLabel(usuario.pais)}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
@@ -391,10 +458,8 @@ export default function GestionUsuarios() {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         <div className="flex items-center gap-2">
-                                            {/* No permitir cambiar el rol del propio usuario */}
                                             {usuario.idUsuario !== userProfile?.idUsuario && (
                                                 <>
-                                                    {/* No mostrar botones para otros superadmins */}
                                                     {usuario.rol !== 'superadmin' && (
                                                         <>
                                                             {usuario.rol !== 'admin' && (
@@ -419,7 +484,6 @@ export default function GestionUsuarios() {
                                                             )}
                                                         </>
                                                     )}
-                                                    {/* Mostrar indicador para otros superadmins */}
                                                     {usuario.rol === 'superadmin' && (
                                                         <span className="text-red-400 text-xs font-bold">
                                                             Super Admin

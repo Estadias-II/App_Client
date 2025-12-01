@@ -3,13 +3,12 @@ import LogoEmpresa from "../assets/LogoEmpresa.png";
 import Navbar from "./Navbar";
 import { useAuth } from "../hooks/useAuth";
 import { useScryfallCards, type CartaCombinada } from "../hooks/useScryfallCards";
-import { useScryfallCategories, type CategoryOption } from "../hooks/useScryfallCategories";
+import { useScryfallCategories } from "../hooks/useScryfallCategories";
 import { useState } from "react";
 import {
   FaSearch,
   FaSync,
   FaStar,
-  FaDollarSign,
   FaEllipsisV,
   FaFilter,
   FaChevronDown,

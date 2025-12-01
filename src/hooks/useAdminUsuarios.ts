@@ -34,7 +34,7 @@ export const useAdminUsuarios = () => {
     const [error, setError] = useState<string | null>(null);
 
     const api = axios.create({
-        baseURL: 'http://localhost:4000/api/usuarios',
+        baseURL: `${import.meta.env.VITE_API_URL}/api/usuarios`,
         headers: {
             'Content-Type': 'application/json',
         }

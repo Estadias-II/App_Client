@@ -37,7 +37,7 @@ export const usePedidos = () => {
     const [error, setError] = useState<string | null>(null);
 
     const api = axios.create({
-        baseURL: 'http://localhost:4000/api/pedidos',
+        baseURL: `${import.meta.env.VITE_API_URL}/api/pedidos`,
         headers: {
             'Content-Type': 'application/json',
         }

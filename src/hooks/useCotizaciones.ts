@@ -45,7 +45,7 @@ export const useCotizaciones = () => {
     const [error, setError] = useState<string | null>(null);
 
     const api = axios.create({
-        baseURL: 'http://localhost:4000/api/cotizaciones',
+        baseURL: `${import.meta.env.VITE_API_URL}/api/cotizaciones`,
         headers: {
             'Content-Type': 'application/json',
         }

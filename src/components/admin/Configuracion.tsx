@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAdminConfig } from '../../hooks/useAdminConfig';
-import { FaUser, FaKey, FaSave, FaSync, FaInfoCircle, FaShieldAlt } from 'react-icons/fa';
+import { FaUser, FaKey, FaSave, FaSync, FaInfoCircle, FaShieldAlt, FaChevronDown } from 'react-icons/fa';
+import { PAISES, validarCodigoPostal, formatearCodigoPostal } from '../../constants/paises';
 
 interface ConfigForm {
     nombres: string;
@@ -19,27 +20,19 @@ interface PasswordForm {
     confirmarContraseña: string;
 }
 
-const paises = [
-    { value: "mx", label: "México" },
-    { value: "us", label: "Estados Unidos" },
-    { value: "es", label: "España" },
-    { value: "ar", label: "Argentina" },
-    { value: "co", label: "Colombia" },
-    { value: "pe", label: "Perú" },
-    { value: "cl", label: "Chile" },
-    { value: "br", label: "Brasil" }
-];
-
 export default function Configuracion() {
     const { configData, loading, getConfig, updateConfig, updatePassword } = useAdminConfig();
     const [activeTab, setActiveTab] = useState<'personal' | 'seguridad'>('personal');
     const [saving, setSaving] = useState(false);
+    const [ejemploCodigoPostal, setEjemploCodigoPostal] = useState("Ej: 12345");
 
     const { 
         register: registerConfig, 
         handleSubmit: handleSubmitConfig, 
         formState: { errors: errorsConfig }, 
-        reset: resetConfig 
+        reset: resetConfig,
+        watch: watchConfig,
+        setValue: setConfigValue
     } = useForm<ConfigForm>();
     
     const { 
@@ -49,9 +42,32 @@ export default function Configuracion() {
         reset: resetPassword 
     } = useForm<PasswordForm>();
 
+    const paisSeleccionado = watchConfig("pais");
+    const codigoPostal = watchConfig("codigoPostal");
+
     useEffect(() => {
         loadConfig();
     }, []);
+
+    // Actualizar ejemplo de código postal cuando cambia el país
+    useEffect(() => {
+        if (paisSeleccionado) {
+            const pais = PAISES.find(p => p.value === paisSeleccionado);
+            setEjemploCodigoPostal(pais ? `Ej: ${pais.codigoPostalEjemplo}` : "Ej: 12345");
+        } else {
+            setEjemploCodigoPostal("Ej: 12345");
+        }
+    }, [paisSeleccionado]);
+
+    // Formatear código postal mientras se escribe
+    useEffect(() => {
+        if (codigoPostal && paisSeleccionado) {
+            const formateado = formatearCodigoPostal(codigoPostal, paisSeleccionado);
+            if (formateado !== codigoPostal) {
+                setConfigValue("codigoPostal", formateado);
+            }
+        }
+    }, [codigoPostal, paisSeleccionado, setConfigValue]);
 
     const loadConfig = async () => {
         try {
@@ -65,14 +81,48 @@ export default function Configuracion() {
                     ciudad: data.ciudad,
                     codigoPostal: data.codigoPostal
                 });
+                
+                // Actualizar ejemplo de código postal
+                if (data.pais) {
+                    const pais = PAISES.find(p => p.value === data.pais);
+                    setEjemploCodigoPostal(pais ? `Ej: ${pais.codigoPostalEjemplo}` : "Ej: 12345");
+                }
             }
         } catch (error) {
             console.error('Error al cargar configuración:', error);
         }
     };
 
+    // Función de validación personalizada para código postal
+    const validarCodigoPostalCampo = (value: string) => {
+        if (!paisSeleccionado) return true; // No validar si no hay país seleccionado
+        
+        if (!value) return "El código postal es requerido";
+        
+        if (value.length < 3 || value.length > 12) {
+            return "El código postal debe tener entre 3 y 12 caracteres";
+        }
+        
+        // Validación básica de caracteres permitidos
+        const caracteresValidos = /^[A-Z0-9\-\s]*$/i;
+        if (!caracteresValidos.test(value)) {
+            return "Solo se permiten letras, números, espacios y guiones";
+        }
+        
+        return true;
+    };
+
     const onUpdateConfig = async (data: ConfigForm) => {
         try {
+            // Validar código postal antes de enviar
+            if (data.pais && data.codigoPostal) {
+                if (!validarCodigoPostal(data.codigoPostal, data.pais)) {
+                    const pais = PAISES.find(p => p.value === data.pais);
+                    alert(`Código postal inválido para ${pais?.label}. Formato esperado: ${pais?.codigoPostalEjemplo}`);
+                    return;
+                }
+            }
+            
             setSaving(true);
             await updateConfig(data);
             await loadConfig(); // Recargar datos actualizados
@@ -263,19 +313,22 @@ export default function Configuracion() {
                                         <label className="block text-sm font-medium text-gray-300 mb-2">
                                             País *
                                         </label>
-                                        <select
-                                            {...registerConfig("pais", { 
-                                                required: "El país es requerido"
-                                            })}
-                                            className="w-full px-4 py-3 bg-[#2a2a2a] border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                                        >
-                                            <option value="">Selecciona un país</option>
-                                            {paises.map((pais) => (
-                                                <option key={pais.value} value={pais.value}>
-                                                    {pais.label}
-                                                </option>
-                                            ))}
-                                        </select>
+                                        <div className="relative">
+                                            <select
+                                                {...registerConfig("pais", { 
+                                                    required: "El país es requerido"
+                                                })}
+                                                className="w-full px-4 py-3 bg-[#2a2a2a] border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 appearance-none"
+                                            >
+                                                <option value="">Selecciona un país</option>
+                                                {PAISES.map((pais) => (
+                                                    <option key={pais.value} value={pais.value}>
+                                                        {pais.bandera} {pais.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <FaChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                        </div>
                                         {errorsConfig.pais && (
                                             <p className="text-red-400 text-sm mt-1">{errorsConfig.pais.message}</p>
                                         )}
@@ -305,17 +358,20 @@ export default function Configuracion() {
                                         </label>
                                         <input
                                             type="text"
-                                            {...registerConfig("codigoPostal", { 
+                                            {...registerConfig("codigoPostal", {
                                                 required: "El código postal es requerido",
-                                                pattern: {
-                                                    value: /^[0-9]{5}$/,
-                                                    message: "Debe tener 5 dígitos"
-                                                }
+                                                validate: validarCodigoPostalCampo
                                             })}
                                             className="w-full px-4 py-3 bg-[#2a2a2a] border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                            placeholder={ejemploCodigoPostal}
                                         />
                                         {errorsConfig.codigoPostal && (
                                             <p className="text-red-400 text-sm mt-1">{errorsConfig.codigoPostal.message}</p>
+                                        )}
+                                        {paisSeleccionado && (
+                                            <p className="text-gray-400 text-xs mt-1">
+                                                Formato esperado: {PAISES.find(p => p.value === paisSeleccionado)?.codigoPostalEjemplo}
+                                            </p>
                                         )}
                                     </div>
                                 </div>
@@ -389,10 +445,10 @@ export default function Configuracion() {
                                         type="password"
                                         {...registerPassword("nuevaContraseña", { 
                                             required: "La nueva contraseña es requerida",
-                                            minLength: { value: 6, message: "Mínimo 6 caracteres" }
+                                            minLength: { value: 8, message: "Mínimo 8 caracteres" }
                                         })}
                                         className="w-full px-4 py-3 bg-[#2a2a2a] border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                                        placeholder="Ingresa tu nueva contraseña"
+                                        placeholder="Mínimo 8 caracteres"
                                     />
                                     {errorsPassword.nuevaContraseña && (
                                         <p className="text-red-400 text-sm mt-1">{errorsPassword.nuevaContraseña.message}</p>
@@ -420,7 +476,7 @@ export default function Configuracion() {
                                 <div className="bg-orange-900/20 border border-orange-400 rounded-lg p-4">
                                     <h4 className="text-orange-400 font-semibold mb-2">Requisitos de Seguridad</h4>
                                     <ul className="text-orange-300 text-sm space-y-1">
-                                        <li>• Mínimo 6 caracteres</li>
+                                        <li>• Mínimo 8 caracteres</li>
                                         <li>• No usar contraseñas anteriores</li>
                                         <li>• Combinar letras, números y símbolos</li>
                                         <li>• Las contraseñas deben coincidir</li>

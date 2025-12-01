@@ -1,3 +1,4 @@
+// frontend/components/Settings.tsx
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { FaUser, FaLock, FaInfoCircle, FaSave, FaKey, FaChevronDown } from "react-icons/fa";
@@ -5,6 +6,7 @@ import { usuarioApi, type UpdatePerfilData, type UpdatePasswordData } from "../a
 import { useAuth } from "../hooks/useAuth";
 import Navbar from "./Navbar";
 import { toast } from "react-toastify";
+import { PAISES, validarCodigoPostal, formatearCodigoPostal } from "../constants/paises";
 
 interface PerfilCompleto {
   idUsuario: number;
@@ -35,41 +37,18 @@ interface PasswordForm {
   confirmarContraseña: string;
 }
 
-// Lista de países (la misma que en Register)
-const paises = [
-  { value: "mx", label: "México" },
-  { value: "us", label: "Estados Unidos" },
-  { value: "es", label: "España" },
-  { value: "ar", label: "Argentina" },
-  { value: "co", label: "Colombia" },
-  { value: "pe", label: "Perú" },
-  { value: "cl", label: "Chile" },
-  { value: "br", label: "Brasil" },
-  { value: "fr", label: "Francia" },
-  { value: "de", label: "Alemania" },
-  { value: "it", label: "Italia" },
-  { value: "uk", label: "Reino Unido" },
-  { value: "ca", label: "Canadá" },
-  { value: "jp", label: "Japón" },
-  { value: "au", label: "Australia" }
-];
-
-// Función para formatear fecha al formato YYYY-MM-DD para input date
 const formatDateForInput = (dateString: string): string => {
   if (!dateString) return '';
   
-  // Si ya está en formato YYYY-MM-DD, retornar tal cual
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
     return dateString;
   }
   
-  // Si viene en formato dd/mm/aaaa, convertir a YYYY-MM-DD
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
     const [day, month, year] = dateString.split('/');
     return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
   
-  // Si es un objeto Date o string ISO
   try {
     const date = new Date(dateString);
     if (!isNaN(date.getTime())) {
@@ -82,7 +61,6 @@ const formatDateForInput = (dateString: string): string => {
   return '';
 };
 
-// Función para formatear fecha para mostrar en la UI
 const formatDateForDisplay = (dateString: string): string => {
   if (!dateString) return '';
   
@@ -98,19 +76,26 @@ const formatDateForDisplay = (dateString: string): string => {
   return dateString;
 };
 
+const getPaisLabel = (codigoPais: string) => {
+  const pais = PAISES.find(p => p.value === codigoPais);
+  return pais ? `${pais.bandera} ${pais.label}` : 'Selecciona un país';
+};
+
 export default function Settings() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [activeSection, setActiveSection] = useState<'personal' | 'password'>('personal');
   const [perfil, setPerfil] = useState<PerfilCompleto | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [ejemploCodigoPostal, setEjemploCodigoPostal] = useState("Ej: 12345");
 
   const { 
     register: registerPerfil, 
     handleSubmit: handleSubmitPerfil, 
     formState: { errors: errorsPerfil }, 
     reset: resetPerfil,
-    setValue: setPerfilValue 
+    watch: watchPerfil,
+    setValue: setPerfilValue
   } = useForm<PerfilForm>();
   
   const { 
@@ -120,11 +105,34 @@ export default function Settings() {
     reset: resetPassword 
   } = useForm<PasswordForm>();
 
+  const paisSeleccionado = watchPerfil("pais");
+  const codigoPostal = watchPerfil("codigoPostal");
+
   useEffect(() => {
     if (isAuthenticated) {
       loadPerfilCompleto();
     }
   }, [isAuthenticated]);
+
+  // Actualizar ejemplo de código postal cuando cambia el país
+  useEffect(() => {
+    if (paisSeleccionado) {
+      const pais = PAISES.find(p => p.value === paisSeleccionado);
+      setEjemploCodigoPostal(pais ? `Ej: ${pais.codigoPostalEjemplo}` : "Ej: 12345");
+    } else {
+      setEjemploCodigoPostal("Ej: 12345");
+    }
+  }, [paisSeleccionado]);
+
+  // Formatear código postal mientras se escribe
+  useEffect(() => {
+    if (codigoPostal && paisSeleccionado) {
+      const formateado = formatearCodigoPostal(codigoPostal, paisSeleccionado);
+      if (formateado !== codigoPostal) {
+        setPerfilValue("codigoPostal", formateado);
+      }
+    }
+  }, [codigoPostal, paisSeleccionado, setPerfilValue]);
 
   const loadPerfilCompleto = async () => {
     try {
@@ -134,13 +142,18 @@ export default function Settings() {
       
       setPerfil(perfilData);
       
-      // Formatear los datos para el formulario
       const formData = {
         ...perfilData,
         fechaNacimiento: formatDateForInput(perfilData.fechaNacimiento)
       };
       
       resetPerfil(formData);
+      
+      // Actualizar ejemplo de código postal
+      if (perfilData.pais) {
+        const pais = PAISES.find(p => p.value === perfilData.pais);
+        setEjemploCodigoPostal(pais ? `Ej: ${pais.codigoPostalEjemplo}` : "Ej: 12345");
+      }
     } catch (error) {
       console.error('Error al cargar perfil:', error);
       toast.error('Error al cargar los datos del perfil');
@@ -149,15 +162,42 @@ export default function Settings() {
     }
   };
 
+  // Función de validación personalizada para código postal
+  const validarCodigoPostalCampo = (value: string) => {
+    if (!paisSeleccionado) return true; // No validar si no hay país seleccionado
+    
+    if (!value) return "El código postal es requerido";
+    
+    if (value.length < 3 || value.length > 12) {
+      return "El código postal debe tener entre 3 y 12 caracteres";
+    }
+    
+    // Validación básica de caracteres permitidos
+    const caracteresValidos = /^[A-Z0-9\-\s]*$/i;
+    if (!caracteresValidos.test(value)) {
+      return "Solo se permiten letras, números, espacios y guiones";
+    }
+    
+    return true;
+  };
+
   const onUpdatePerfil = async (data: PerfilForm) => {
     try {
+      // Validar código postal antes de enviar
+      if (data.pais && data.codigoPostal) {
+        if (!validarCodigoPostal(data.codigoPostal, data.pais)) {
+          const pais = PAISES.find(p => p.value === data.pais);
+          toast.error(`Código postal inválido para ${pais?.label}. Formato esperado: ${pais?.codigoPostalEjemplo}`);
+          return;
+        }
+      }
+      
       setUpdating(true);
       
-      // Convertir la fecha de vuelta al formato esperado por el backend si es necesario
       const updateData: UpdatePerfilData = {
         nombres: data.nombres,
         apellidos: data.apellidos,
-        fechaNacimiento: data.fechaNacimiento, // Ya está en formato YYYY-MM-DD que Sequelize puede manejar
+        fechaNacimiento: data.fechaNacimiento,
         pais: data.pais,
         ciudad: data.ciudad,
         codigoPostal: data.codigoPostal
@@ -166,7 +206,6 @@ export default function Settings() {
       const response = await usuarioApi.updatePerfil(updateData);
       toast.success(response.message);
       
-      // Recargar datos actualizados
       await loadPerfilCompleto();
     } catch (error: any) {
       console.error('Error al actualizar perfil:', error);
@@ -194,12 +233,6 @@ export default function Settings() {
     } finally {
       setUpdating(false);
     }
-  };
-
-  // Función para obtener el nombre del país basado en el código
-  const getPaisLabel = (codigoPais: string) => {
-    const pais = paises.find(p => p.value === codigoPais);
-    return pais ? pais.label : 'Selecciona un país';
   };
 
   if (authLoading || loading) {
@@ -330,7 +363,7 @@ export default function Settings() {
                         )}
                       </div>
 
-                      {/* País - Combobox Mejorado */}
+                      {/* País */}
                       <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">
                           País *
@@ -343,12 +376,9 @@ export default function Settings() {
                             className="w-full px-4 py-3 bg-[#2a2a2a] border border-gray-600 rounded-lg text-white appearance-none focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
                           >
                             <option value="">Selecciona un país</option>
-                            {paises.map((pais) => (
-                              <option 
-                                key={pais.value} 
-                                value={pais.value}
-                              >
-                                {pais.label}
+                            {PAISES.map((pais) => (
+                              <option key={pais.value} value={pais.value}>
+                                {pais.bandera} {pais.label}
                               </option>
                             ))}
                           </select>
@@ -384,18 +414,20 @@ export default function Settings() {
                         </label>
                         <input
                           type="text"
-                          {...registerPerfil("codigoPostal", { 
+                          {...registerPerfil("codigoPostal", {
                             required: "El código postal es requerido",
-                            maxLength: { value: 45, message: "Máximo 45 caracteres" },
-                            pattern: {
-                              value: /^[0-9]{5}$/,
-                              message: "El código postal debe tener 5 dígitos"
-                            }
+                            validate: validarCodigoPostalCampo
                           })}
                           className="w-full px-4 py-3 bg-[#2a2a2a] border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+                          placeholder={ejemploCodigoPostal}
                         />
                         {errorsPerfil.codigoPostal && (
                           <p className="text-red-400 text-sm mt-1">{errorsPerfil.codigoPostal.message}</p>
+                        )}
+                        {paisSeleccionado && (
+                          <p className="text-gray-400 text-xs mt-1">
+                            Formato esperado: {PAISES.find(p => p.value === paisSeleccionado)?.codigoPostalEjemplo}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -417,7 +449,9 @@ export default function Settings() {
                         </div>
                         <div>
                           <span className="text-gray-400">País actual:</span>
-                          <p className="text-white font-medium">{getPaisLabel(perfil.pais)}</p>
+                          <p className="text-white font-medium">
+                            {getPaisLabel(perfil.pais)}
+                          </p>
                         </div>
                         <div>
                           <span className="text-gray-400">Fecha de nacimiento:</span>
@@ -483,10 +517,10 @@ export default function Settings() {
                       type="password"
                       {...registerPassword("nuevaContraseña", { 
                         required: "La nueva contraseña es requerida",
-                        minLength: { value: 6, message: "Mínimo 6 caracteres" }
+                        minLength: { value: 8, message: "Mínimo 8 caracteres" }
                       })}
                       className="w-full px-4 py-3 bg-[#2a2a2a] border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-                      placeholder="Ingresa tu nueva contraseña"
+                      placeholder="Mínimo 8 caracteres"
                     />
                     {errorsPassword.nuevaContraseña && (
                       <p className="text-red-400 text-sm mt-1">{errorsPassword.nuevaContraseña.message}</p>
@@ -517,7 +551,7 @@ export default function Settings() {
                       <h3 className="text-orange-400 font-semibold">Requisitos de Contraseña</h3>
                     </div>
                     <ul className="text-orange-300 text-sm space-y-1">
-                      <li>• Mínimo 6 caracteres</li>
+                      <li>• Mínimo 8 caracteres</li>
                       <li>• No puede ser igual a la contraseña anterior</li>
                       <li>• Las contraseñas deben coincidir</li>
                     </ul>

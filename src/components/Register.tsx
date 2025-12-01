@@ -1,9 +1,12 @@
+// frontend/components/RegistroMultiPaso.tsx
 import LogoEmpresa from "../assets/LogoEmpresa.png";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useRegistro } from "../hooks/useRegistro";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { FaChevronDown } from "react-icons/fa";
+import { PAISES, validarCodigoPostal, formatearCodigoPostal } from "../constants/paises";
 
 interface RegistroForm {
   nombres: string;
@@ -24,14 +27,38 @@ export default function RegistroMultiPaso() {
     handleSubmit,
     watch,
     trigger,
+    setValue,
     formState: { errors },
   } = useForm<RegistroForm>();
 
   const contraseña = watch("contraseña");
+  const paisSeleccionado = watch("pais");
+  const codigoPostal = watch("codigoPostal");
 
   const { registrarUsuario, loading } = useRegistro();
 
   const [paso, setPaso] = useState(0);
+  const [ejemploCodigoPostal, setEjemploCodigoPostal] = useState("Ej: 12345");
+
+  // Actualizar ejemplo de código postal cuando cambia el país
+  useEffect(() => {
+    if (paisSeleccionado) {
+      const pais = PAISES.find(p => p.value === paisSeleccionado);
+      setEjemploCodigoPostal(pais ? `Ej: ${pais.codigoPostalEjemplo}` : "Ej: 12345");
+    } else {
+      setEjemploCodigoPostal("Ej: 12345");
+    }
+  }, [paisSeleccionado]);
+
+  // Formatear código postal mientras se escribe
+  useEffect(() => {
+    if (codigoPostal && paisSeleccionado) {
+      const formateado = formatearCodigoPostal(codigoPostal, paisSeleccionado);
+      if (formateado !== codigoPostal) {
+        setValue("codigoPostal", formateado);
+      }
+    }
+  }, [codigoPostal, paisSeleccionado, setValue]);
 
   const avanzar = async () => {
     const camposPorPaso: ReadonlyArray<ReadonlyArray<keyof RegistroForm>> = [
@@ -46,7 +73,35 @@ export default function RegistroMultiPaso() {
   const retroceder = () => setPaso(paso - 1);
 
   const onSubmit = async (data: RegistroForm) => {
+    // Validar código postal antes de enviar
+    if (data.pais && data.codigoPostal) {
+      if (!validarCodigoPostal(data.codigoPostal, data.pais)) {
+        const pais = PAISES.find(p => p.value === data.pais);
+        alert(`Código postal inválido para ${pais?.label}. Formato esperado: ${pais?.codigoPostalEjemplo}`);
+        return;
+      }
+    }
+    
     await registrarUsuario(data);
+  };
+
+  // Función de validación personalizada para código postal
+  const validarCodigoPostalCampo = (value: string) => {
+    if (!paisSeleccionado) return true; // No validar si no hay país seleccionado
+    
+    if (!value) return "El código postal es requerido";
+    
+    if (value.length < 3 || value.length > 12) {
+      return "El código postal debe tener entre 3 y 12 caracteres";
+    }
+    
+    // Validación básica de caracteres permitidos
+    const caracteresValidos = /^[A-Z0-9\-\s]*$/i;
+    if (!caracteresValidos.test(value)) {
+      return "Solo se permiten letras, números, espacios y guiones";
+    }
+    
+    return true;
   };
 
   return (
@@ -190,21 +245,24 @@ export default function RegistroMultiPaso() {
                     <label className="text-lg sm:text-xl md:text-[22px] font-bold text-[#BFBFBF] mb-1 sm:mb-2">
                       País:
                     </label>
-                    <select
-                      className={`py-2 sm:py-3 rounded-xl sm:rounded-2xl text-black font-bold px-3 sm:px-5 text-base sm:text-lg md:text-[20px] border-2 transition-colors ${
-                        errors.pais 
-                          ? "border-red-500 bg-red-50" 
-                          : "border-yellow-400 hover:bg-[#978F8F] focus:bg-[#978F8F]"
-                      }`}
-                      {...register("pais", { required: true })}
-                    >
-                      <option value="">Selecciona un país</option>
-                      <option value="mx">México</option>
-                      <option value="us">Estados Unidos</option>
-                      <option value="es">España</option>
-                      <option value="ar">Argentina</option>
-                      <option value="co">Colombia</option>
-                    </select>
+                    <div className="relative">
+                      <select
+                        className={`py-2 sm:py-3 rounded-xl sm:rounded-2xl text-black font-bold px-3 sm:px-5 text-base sm:text-lg md:text-[20px] border-2 transition-colors w-full appearance-none ${
+                          errors.pais 
+                            ? "border-red-500 bg-red-50" 
+                            : "border-yellow-400 hover:bg-[#978F8F] focus:bg-[#978F8F]"
+                        }`}
+                        {...register("pais", { required: true })}
+                      >
+                        <option value="">Selecciona un país</option>
+                        {PAISES.map((pais) => (
+                          <option key={pais.value} value={pais.value}>
+                            {pais.bandera} {pais.label}
+                          </option>
+                        ))}
+                      </select>
+                      <FaChevronDown className="absolute right-3 sm:right-5 top-1/2 transform -translate-y-1/2 text-gray-600 pointer-events-none" />
+                    </div>
                     {errors.pais && (
                       <span className="text-red-400 text-sm sm:text-base mt-1 ml-2">
                         El país es obligatorio
@@ -244,16 +302,21 @@ export default function RegistroMultiPaso() {
                           ? "border-red-500 bg-red-50" 
                           : "border-yellow-400 hover:bg-[#978F8F] hover:placeholder:text-white focus:bg-[#978F8F] focus:placeholder:text-white"
                       }`}
-                      placeholder="12345"
+                      placeholder={ejemploCodigoPostal}
                       {...register("codigoPostal", {
-                        required: true,
-                        pattern: /^[0-9]{5}$/,
+                        required: "El código postal es obligatorio",
+                        validate: validarCodigoPostalCampo
                       })}
                     />
                     {errors.codigoPostal && (
                       <span className="text-red-400 text-sm sm:text-base mt-1 ml-2">
-                        {errors.codigoPostal.type === 'pattern' ? 'Código postal inválido (5 dígitos)' : 'El código postal es obligatorio'}
+                        {errors.codigoPostal.message}
                       </span>
+                    )}
+                    {paisSeleccionado && (
+                      <p className="text-gray-400 text-xs sm:text-sm mt-1 ml-2">
+                        Formato: {PAISES.find(p => p.value === paisSeleccionado)?.codigoPostalEjemplo}
+                      </p>
                     )}
                   </div>
                 </motion.div>

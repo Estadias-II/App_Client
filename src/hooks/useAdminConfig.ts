@@ -23,7 +23,7 @@ export const useAdminConfig = () => {
     const [configData, setConfigData] = useState<any>(null);
 
     const api = axios.create({
-        baseURL: 'http://localhost:4000/api/usuarios/admin',
+        baseURL: `${import.meta.env.VITE_API_URL}/api/usuarios/admin`,
         headers: {
             'Content-Type': 'application/json',
         }

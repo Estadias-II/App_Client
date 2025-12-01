@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const scryfallApi = axios.create({
-  baseURL: 'https://api.scryfall.com',
+  baseURL: import.meta.env.VITE_SCRYFALL_URL,
   headers: {
     'User-Agent': 'KazokuGames/1.0',
     'Accept': 'application/json'

@@ -8,7 +8,7 @@ export const useLogin = () => {
 
   return useMutation({
     mutationFn: async (data: { correo: string; contraseña: string }) => {
-      const res = await axios.post("http://localhost:4000/api/usuarios/login", data);
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/usuarios/login`, data);
       return res.data;
     },
     onSuccess: (res) => {

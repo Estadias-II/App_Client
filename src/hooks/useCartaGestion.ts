@@ -34,7 +34,7 @@ export const useCartaGestion = () => {
     const [imagenesCargadas, setImagenesCargadas] = useState<{[key: string]: string}>({});
 
     const api = axios.create({
-        baseURL: 'http://localhost:4000/api/cartas-gestion',
+        baseURL: `${import.meta.env.VITE_API_URL}/api/cartas-gestion`,
         headers: {
             'Content-Type': 'application/json',
         }
@@ -56,7 +56,7 @@ export const useCartaGestion = () => {
                 return imagenesCargadas[idScryfall];
             }
 
-            const response = await fetch(`https://api.scryfall.com/cards/${idScryfall}`);
+            const response = await fetch(`${import.meta.env.VITE_SCRYFALL_URL}/cards/${idScryfall}`);
             
             if (!response.ok) {
                 throw new Error('Carta no encontrada en Scryfall');
@@ -88,7 +88,7 @@ export const useCartaGestion = () => {
     // Función para obtener precio de Scryfall
     const obtenerPrecioScryfall = async (idScryfall: string): Promise<number | null> => {
         try {
-            const response = await fetch(`https://api.scryfall.com/cards/${idScryfall}`);
+            const response = await fetch(`${import.meta.env.VITE_SCRYFALL_URL}/cards/${idScryfall}`);
             
             if (!response.ok) {
                 throw new Error('Carta no encontrada en Scryfall');

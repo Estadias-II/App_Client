@@ -18,7 +18,7 @@ export const useScryfallCards = () => {
     const [cards, setCards] = useState<CartaCombinada[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const { cartasGestion, getCartaGestionById } = useCartaGestion();
+    const { getCartaGestionById } = useCartaGestion();
 
     const combinarConGestion = async (scryfallCards: ScryfallCard[]): Promise<CartaCombinada[]> => {
         return await Promise.all(
