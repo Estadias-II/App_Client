@@ -1,4 +1,3 @@
-// hooks/useScryfallCards.ts (ACTUALIZADO)
 import { useState, useEffect } from 'react';
 import { scryfallService, type ScryfallCard } from '../api/scryfallApi';
 import { useCartaGestion } from './useCartaGestion';
@@ -25,22 +24,21 @@ export const useScryfallCards = () => {
             scryfallCards.map(async (card) => {
                 try {
                     const gestion = await getCartaGestionById(card.id);
-                    // Asegurar que los precios sean números
                     if (gestion) {
                         return {
                             ...card,
                             gestion: {
                                 ...gestion,
-                                precioPersonalizado: gestion.precioPersonalizado ?
-                                    (typeof gestion.precioPersonalizado === 'string' ?
-                                        parseFloat(gestion.precioPersonalizado) :
-                                        Number(gestion.precioPersonalizado)) :
-                                    null,
-                                precioScryfall: gestion.precioScryfall ?
-                                    (typeof gestion.precioScryfall === 'string' ?
-                                        parseFloat(gestion.precioScryfall) :
-                                        Number(gestion.precioScryfall)) :
-                                    null
+                                precioPersonalizado: gestion.precioPersonalizado !== null && gestion.precioPersonalizado !== undefined
+                                    ? (typeof gestion.precioPersonalizado === 'string'
+                                        ? parseFloat(gestion.precioPersonalizado)
+                                        : Number(gestion.precioPersonalizado))
+                                    : null,
+                                precioScryfall: gestion.precioScryfall !== null && gestion.precioScryfall !== undefined
+                                    ? (typeof gestion.precioScryfall === 'string'
+                                        ? parseFloat(gestion.precioScryfall)
+                                        : Number(gestion.precioScryfall))
+                                    : null
                             }
                         };
                     }

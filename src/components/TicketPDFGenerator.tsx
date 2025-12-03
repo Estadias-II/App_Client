@@ -1,6 +1,6 @@
-// components/TicketPDFGenerator.tsx
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { getCardPrice, formatPrice, getPriceTypeLabel } from '../utils/priceHelper';
 
 interface CartItem {
   card: any;
@@ -20,7 +20,6 @@ interface TicketPDFGeneratorProps {
 
 export const TicketPDFGenerator = {
   generateTicket: async ({ cartItems, totalPrice, totalItems, userProfile }: TicketPDFGeneratorProps) => {
-    // Crear elemento HTML para el ticket
     const ticketElement = document.createElement('div');
     ticketElement.style.cssText = `
       width: 300px;
@@ -35,12 +34,10 @@ export const TicketPDFGenerator = {
       top: -1000px;
     `;
 
-    // Fecha y hora actual
     const now = new Date();
     const fecha = now.toLocaleDateString('es-ES');
     const hora = now.toLocaleTimeString('es-ES');
 
-    // Contenido del ticket
     ticketElement.innerHTML = `
       <div style="text-align: center; margin-bottom: 15px;">
         <h2 style="margin: 0 0 5px 0; font-size: 18px; font-weight: bold;">KAZOKU GAMES</h2>
@@ -82,24 +79,19 @@ export const TicketPDFGenerator = {
             ? item.card.name.substring(0, 20) + '...' 
             : item.card.name;
           
-          const price = parseFloat(
-            item.card.prices?.usd ||
-            item.card.prices?.usd_foil ||
-            item.card.prices?.eur ||
-            '0'
-          );
-          
+          const price = getCardPrice(item.card);
           const itemTotal = price * item.quantity;
+          const priceTypeLabel = getPriceTypeLabel(item.card);
           
           return `
             <div style="margin-bottom: 6px;">
               <div style="display: flex; justify-content: space-between;">
                 <span>${cardName}</span>
-                <span>$${price.toFixed(2)}</span>
+                <span>$${formatPrice(price)}${priceTypeLabel}</span>
               </div>
               <div style="display: flex; justify-content: space-between; font-size: 10px;">
                 <span>Cant: ${item.quantity}</span>
-                <span>Sub: $${itemTotal.toFixed(2)}</span>
+                <span>Sub: $${formatPrice(itemTotal)}</span>
               </div>
             </div>
           `;
@@ -113,7 +105,7 @@ export const TicketPDFGenerator = {
         </div>
         <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 14px;">
           <span>TOTAL A PAGAR:</span>
-          <span>$${totalPrice.toFixed(2)}</span>
+          <span>$${formatPrice(totalPrice)}</span>
         </div>
       </div>
 
@@ -131,11 +123,9 @@ export const TicketPDFGenerator = {
       </div>
     `;
 
-    // Agregar al documento temporalmente
     document.body.appendChild(ticketElement);
 
     try {
-      // Convertir a canvas y luego a PDF
       const canvas = await html2canvas(ticketElement, {
         scale: 2,
         useCORS: true,
@@ -154,10 +144,8 @@ export const TicketPDFGenerator = {
 
       pdf.addImage(imgData, 'PNG', 0, 0, ticketElement.offsetWidth, ticketElement.offsetHeight);
       
-      // Generar nombre del archivo
       const fileName = `ticket_kazoku_${fecha.replace(/\//g, '-')}_${hora.replace(/:/g, '-')}.pdf`;
       
-      // Descargar PDF
       pdf.save(fileName);
 
       return true;
@@ -165,7 +153,6 @@ export const TicketPDFGenerator = {
       console.error('Error al generar el PDF:', error);
       throw new Error('No se pudo generar el ticket');
     } finally {
-      // Limpiar elemento temporal
       document.body.removeChild(ticketElement);
     }
   }

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, type ReactNode, useEffect } from 'react';
 import { type ScryfallCard } from '../api/scryfallApi';
+import { getCardPrice } from '../utils/priceHelper';
 
 export interface CartItem {
     card: ScryfallCard;
@@ -8,7 +9,7 @@ export interface CartItem {
 
 // Interfaz para los datos que guardaremos en localStorage
 interface StoredCartItem {
-    card: any; // Usamos any para flexibilidad con los datos complejos de Scryfall
+    card: any;
     quantity: number;
 }
 
@@ -40,11 +41,10 @@ interface CartProviderProps {
 export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
     const [isInitialized, setIsInitialized] = useState(false);
-    const MAX_TOTAL_ITEMS = 99; // Límite total del carrito
+    const MAX_TOTAL_ITEMS = 99;
 
     // Cargar carrito desde localStorage al inicializar
     useEffect(() => {
-        // En el useEffect de carga, reemplaza esta parte:
         const loadCartFromStorage = () => {
             try {
                 const savedCart = localStorage.getItem('magicCart');
@@ -53,12 +53,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
                 if (savedCart) {
                     const parsedCart: StoredCartItem[] = JSON.parse(savedCart);
 
-                    // Validar que sea un array
                     if (!Array.isArray(parsedCart)) {
                         throw new Error('Formato de carrito inválido');
                     }
 
-                    // Filtrar items válidos
                     const validCartItems = parsedCart.filter(item =>
                         item &&
                         item.card &&
@@ -74,7 +72,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
                 }
             } catch (error) {
                 console.error('Error al cargar el carrito desde localStorage:', error);
-                // Limpiar localStorage corrupto
                 localStorage.removeItem('magicCart');
                 setCartItems([]);
             } finally {
@@ -101,16 +98,14 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         setCartItems(prev => {
             const totalItems = prev.reduce((sum, item) => sum + item.quantity, 0);
 
-            // Verificar si podemos agregar más items al carrito
             if (totalItems >= MAX_TOTAL_ITEMS) {
                 console.log('Carrito lleno, no se puede agregar más items');
-                return prev; // Carrito lleno
+                return prev;
             }
 
             const existingItem = prev.find(item => item.card.id === card.id);
 
             if (existingItem) {
-                // Si ya existe, incrementamos la cantidad
                 const updatedItems = prev.map(item =>
                     item.card.id === card.id
                         ? { ...item, quantity: item.quantity + 1 }
@@ -119,7 +114,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
                 console.log('Cantidad incrementada para:', card.name);
                 return updatedItems;
             } else {
-                // Nuevo item en el carrito
                 const newItems = [...prev, { card, quantity: 1 }];
                 console.log('Nueva carta agregada:', card.name);
                 return newItems;
@@ -141,7 +135,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
             return;
         }
 
-        // Verificar el límite total del carrito
         const totalOtherItems = cartItems
             .filter(item => item.card.id !== cardId)
             .reduce((sum, item) => sum + item.quantity, 0);
@@ -167,12 +160,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
     const getTotalPrice = () => {
         return cartItems.reduce((total, item) => {
-            const price = parseFloat(
-                item.card.prices?.usd ||
-                item.card.prices?.usd_foil ||
-                item.card.prices?.eur ||
-                '0'
-            );
+            const price = getCardPrice(item.card);
             return total + (price * item.quantity);
         }, 0);
     };

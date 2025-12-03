@@ -13,6 +13,7 @@ import { useCart } from "../context/CartContext";
 import { type CartaCombinada } from "../hooks/useScryfallCards";
 import { useState } from "react";
 import CotizacionModal from "./CotizacionModal";
+import { getCardPrice, formatPrice } from '../utils/priceHelper';
 
 interface CardDetailsModalProps {
   card: CartaCombinada;
@@ -36,28 +37,9 @@ export default function CardDetailsModal({ card, isOpen, onClose }: CardDetailsM
     return null;
   };
 
-  // FUNCIÓN CORREGIDA: Obtener precio considerando gestión
-  const getCardPrice = (card: CartaCombinada): number => {
-    // Priorizar precio personalizado, luego precio Scryfall de gestión, luego precio original de Scryfall
-    if (card.gestion?.precioPersonalizado) {
-      // Asegurarnos de que es un número
-      const precio = card.gestion.precioPersonalizado;
-      return typeof precio === 'string' ? parseFloat(precio) : Number(precio);
-    }
-    if (card.gestion?.precioScryfall) {
-      const precio = card.gestion.precioScryfall;
-      return typeof precio === 'string' ? parseFloat(precio) : Number(precio);
-    }
-    if (card.prices?.usd) {
-      return parseFloat(card.prices.usd);
-    }
-    if (card.prices?.usd_foil) {
-      return parseFloat(card.prices.usd_foil);
-    }
-    if (card.prices?.eur) {
-      return parseFloat(card.prices.eur);
-    }
-    return 0;
+  // FUNCIÓN CORREGIDA: Sin recursión
+  const getDisplayPrice = (card: CartaCombinada): number => {
+    return getCardPrice(card);
   };
 
   // FUNCIÓN ACTUALIZADA: Determinar disponibilidad
@@ -133,12 +115,12 @@ export default function CardDetailsModal({ card, isOpen, onClose }: CardDetailsM
     }
 
     const availability = getAvailabilityInfo();
-    const price = getCardPrice(card);
+    const price = getDisplayPrice(card);
     
     switch (availability.status) {
       case "en-stock":
       case "stock-bajo":
-        return `Agregar al carrito - $${price.toFixed(2)}`;
+        return `Agregar al carrito - $${formatPrice(price)}`;
       case "sin-stock":
         return "Sin stock";
       case "no-disponible":
@@ -171,6 +153,7 @@ export default function CardDetailsModal({ card, isOpen, onClose }: CardDetailsM
   const canAddToCart = canAddMoreItems();
   const availabilityInfo = getAvailabilityInfo();
   const AvailabilityIcon = availabilityInfo.icon;
+  const displayPrice = getDisplayPrice(card);
 
   return (
     <>
@@ -312,7 +295,7 @@ export default function CardDetailsModal({ card, isOpen, onClose }: CardDetailsM
                         <div className="col-span-2">
                           <span className="text-gray-400">Precio local:</span>
                           <p className="text-yellow-400 font-bold text-lg">
-                            ${getCardPrice(card).toFixed(2)}
+                            ${formatPrice(displayPrice)}
                           </p>
                         </div>
                       )}
@@ -368,20 +351,20 @@ export default function CardDetailsModal({ card, isOpen, onClose }: CardDetailsM
                   <h3 className="text-gray-400 text-sm font-semibold mb-2">Precios</h3>
                   <div className="space-y-2">
                     {/* Precio local (si existe) */}
-                    {card.gestion?.precioPersonalizado && (
+                    {card.gestion?.precioPersonalizado !== null && card.gestion?.precioPersonalizado !== undefined && (
                       <div className="flex items-center gap-2 bg-yellow-900/30 p-2 rounded">
                         <FaDollarSign className="text-yellow-400" />
                         <span className="text-white">Precio local: </span>
-                        <span className="text-yellow-400 font-bold">${getCardPrice(card).toFixed(2)}</span>
+                        <span className="text-yellow-400 font-bold">${formatPrice(displayPrice)}</span>
                       </div>
                     )}
                     
                     {/* Precio de mercado (cuando no hay precio local) */}
-                    {!card.gestion?.precioPersonalizado && getCardPrice(card) > 0 && (
+                    {(!card.gestion?.precioPersonalizado || card.gestion?.precioPersonalizado === null) && displayPrice > 0 && (
                       <div className="flex items-center gap-2 bg-green-900/30 p-2 rounded">
                         <FaDollarSign className="text-green-400" />
                         <span className="text-white">Precio de mercado: </span>
-                        <span className="text-green-400 font-bold">${getCardPrice(card).toFixed(2)}</span>
+                        <span className="text-green-400 font-bold">${formatPrice(displayPrice)}</span>
                       </div>
                     )}
                     

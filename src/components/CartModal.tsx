@@ -1,4 +1,3 @@
-// components/CartModal.tsx
 import { FaTimes, FaPlus, FaMinus, FaTrash, FaExclamationTriangle, FaFilePdf, FaShoppingCart } from "react-icons/fa";
 import { useCart } from "../context/CartContext";
 import { TicketPDFGenerator } from "./TicketPDFGenerator";
@@ -6,6 +5,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useState } from "react";
 import { usePedidos } from "../hooks/usePedidos";
 import { toast } from "react-toastify";
+import { getCardPrice, formatPrice, getPriceTypeLabel } from "../utils/priceHelper";
 
 interface CartModalProps {
   isOpen: boolean;
@@ -26,19 +26,6 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
       return card.card_faces[0].image_uris.small;
     }
     return null;
-  };
-
-  const getCardPrice = (card: any) => {
-    if (card.prices?.usd) {
-      return parseFloat(card.prices.usd);
-    }
-    if (card.prices?.usd_foil) {
-      return parseFloat(card.prices.usd_foil);
-    }
-    if (card.prices?.eur) {
-      return parseFloat(card.prices.eur);
-    }
-    return 0;
   };
 
   const handleGenerateTicket = async () => {
@@ -77,7 +64,6 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
     }
 
     try {
-      // Primero generar el ticket
       await TicketPDFGenerator.generateTicket({
         cartItems,
         totalPrice: getTotalPrice(),
@@ -89,7 +75,6 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
         } : null
       });
 
-      // Luego crear el pedido en la base de datos
       const pedidoData = {
         items: cartItems,
         total: getTotalPrice(),
@@ -99,13 +84,11 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
 
       await crearPedido(pedidoData);
       
-      toast.success('¡Pedido creado exitosamente!');
       clearCart();
       onClose();
       
     } catch (error: any) {
       console.error('Error al crear pedido:', error);
-      // El error ya se maneja en el hook usePedidos
     }
   };
 
@@ -152,6 +135,7 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
               {cartItems.map((item) => {
                 const imageUrl = getCardImage(item.card);
                 const price = getCardPrice(item.card);
+                const priceTypeLabel = getPriceTypeLabel(item.card);
                 
                 return (
                   <div
@@ -181,9 +165,14 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
                       <p className="text-gray-400 text-sm">
                         {item.card.type_line}
                       </p>
-                      <p className="text-yellow-400 font-bold">
-                        ${price.toFixed(2)}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-yellow-400 font-bold">
+                          ${formatPrice(price)}
+                        </p>
+                        <span className="text-gray-500 text-xs">
+                          {priceTypeLabel}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Controles de cantidad */}
@@ -213,7 +202,7 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
                     {/* Precio total y eliminar */}
                     <div className="text-right">
                       <p className="text-white font-bold">
-                        ${(price * item.quantity).toFixed(2)}
+                        ${formatPrice(price * item.quantity)}
                       </p>
                       <button
                         onClick={() => removeFromCart(item.card.id)}
@@ -237,7 +226,7 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
             <div className="flex justify-between items-center mb-4">
               <span className="text-gray-400 text-lg">Total ({totalItems}/99 items):</span>
               <span className="text-2xl font-bold text-yellow-400">
-                ${getTotalPrice().toFixed(2)}
+                ${formatPrice(getTotalPrice())}
               </span>
             </div>
             
@@ -262,7 +251,6 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
                   Vaciar Carrito
                 </button>
                 
-                {/* Botón para generar ticket */}
                 <button
                   onClick={handleGenerateTicket}
                   disabled={isGeneratingPDF}
@@ -279,7 +267,7 @@ export default function CartModal({ isOpen, onClose }: CartModalProps) {
                 className="flex-1 bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 <FaShoppingCart className={creatingOrder ? "animate-spin" : ""} />
-                {creatingOrder ? "Creando Pedido..." : `Crear Pedido - $${getTotalPrice().toFixed(2)}`}
+                {creatingOrder ? "Creando Pedido..." : `Crear Pedido - $${formatPrice(getTotalPrice())}`}
               </button>
             </div>
 

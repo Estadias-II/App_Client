@@ -21,6 +21,7 @@ import {
 } from "react-icons/fa";
 import { useCart } from "../context/CartContext";
 import CardDetailsModal from "./CardDetailsModal";
+import { formatPrice, getCardPrice, getPriceTypeLabel } from "../utils/priceHelper";
 
 export default function Principal() {
   const { isAuthenticated, userProfile, loading: authLoading } = useAuth();
@@ -145,31 +146,12 @@ export default function Principal() {
   };
 
   // FUNCIÓN ACTUALIZADA: Obtener precio considerando gestión
-  const getCardPrice = (card: CartaCombinada) => {
-    // Priorizar precio personalizado, luego precio Scryfall de gestión, luego precio original de Scryfall
-    if (card.gestion?.precioPersonalizado) {
-      const precio = typeof card.gestion.precioPersonalizado === 'string'
-        ? parseFloat(card.gestion.precioPersonalizado)
-        : Number(card.gestion.precioPersonalizado);
-      return `$${precio.toFixed(2)} (Precio local)`;
-    }
-    if (card.gestion?.precioScryfall) {
-      const precio = typeof card.gestion.precioScryfall === 'string'
-        ? parseFloat(card.gestion.precioScryfall)
-        : Number(card.gestion.precioScryfall);
-      return `$${precio.toFixed(2)} (Precio de mercado)`;
-    }
-    if (card.prices?.usd) {
-      return `$${card.prices.usd} (Precio de mercado)`;
-    }
-    if (card.prices?.usd_foil) {
-      return `$${card.prices.usd_foil} (Foil)`;
-    }
-    if (card.prices?.eur) {
-      return `€${card.prices.eur} (Euro)`;
-    }
-    return "Consultar precio";
+  const getCardPriceText = (card: CartaCombinada) => {
+    const price = getCardPrice(card);
+    const priceType = getPriceTypeLabel(card);
+    return `$${formatPrice(price)} ${priceType}`;
   };
+
 
   // FUNCIÓN ACTUALIZADA: Determinar disponibilidad
   const isCardAvailable = (card: CartaCombinada) => {
@@ -343,8 +325,8 @@ export default function Principal() {
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className={`px-6 py-3 font-bold rounded-lg transition-colors flex items-center gap-2 ${totalActiveFilters > 0
-                    ? 'bg-orange-500 text-white hover:bg-orange-600'
-                    : 'bg-green-600 text-white hover:bg-green-700'
+                  ? 'bg-orange-500 text-white hover:bg-orange-600'
+                  : 'bg-green-600 text-white hover:bg-green-700'
                   }`}
               >
                 <FaFilter />
@@ -390,8 +372,8 @@ export default function Principal() {
                       <button
                         onClick={() => toggleCategory(key)}
                         className={`w-full flex justify-between items-center p-3 rounded-lg transition-colors ${selectedFilters[key]?.length > 0
-                            ? 'bg-yellow-500 text-white font-bold'
-                            : 'bg-[#2a2a2a] text-white hover:bg-[#3a3a3a]'
+                          ? 'bg-yellow-500 text-white font-bold'
+                          : 'bg-[#2a2a2a] text-white hover:bg-[#3a3a3a]'
                           }`}
                       >
                         <span>{category.name}</span>
@@ -414,8 +396,8 @@ export default function Principal() {
                                 key={option.value}
                                 onClick={() => handleCategorySearch(option.value, key)}
                                 className={`w-full text-left p-2 rounded transition-colors flex items-center justify-between ${isFilterActive(key, option.value)
-                                    ? 'bg-yellow-500 text-white font-bold'
-                                    : 'bg-[#2a2a2a] text-white hover:bg-[#3a3a3a]'
+                                  ? 'bg-yellow-500 text-white font-bold'
+                                  : 'bg-[#2a2a2a] text-white hover:bg-[#3a3a3a]'
                                   }`}
                               >
                                 <span className="truncate">{option.label}</span>
@@ -538,8 +520,8 @@ export default function Principal() {
                             onClick={(e) => handleAddToCart(card, e)}
                             disabled={!available}
                             className={`w-full text-left px-4 py-3 text-sm transition-colors flex items-center gap-2 ${available
-                                ? "text-white hover:bg-yellow-400 hover:text-black"
-                                : "text-gray-500 cursor-not-allowed"
+                              ? "text-white hover:bg-yellow-400 hover:text-black"
+                              : "text-gray-500 cursor-not-allowed"
                               }`}
                           >
                             <FaShoppingCart size={12} />
@@ -582,9 +564,9 @@ export default function Principal() {
                       <div className="flex items-center gap-1">
                         <span className="font-semibold">Rareza:</span>
                         <span className={`${card.rarity === 'mythic' ? 'text-purple-400' :
-                            card.rarity === 'rare' ? 'text-yellow-400' :
-                              card.rarity === 'uncommon' ? 'text-gray-300' :
-                                'text-gray-400'
+                          card.rarity === 'rare' ? 'text-yellow-400' :
+                            card.rarity === 'uncommon' ? 'text-gray-300' :
+                              'text-gray-400'
                           }`}>
                           {card.rarity}
                         </span>
@@ -593,7 +575,7 @@ export default function Principal() {
                       {/* Precio */}
                       <div className="flex items-center gap-1">
                         <span className="font-semibold text-green-400">
-                          {getCardPrice(card)}
+                          {getCardPriceText(card)}
                         </span>
                       </div>
                     </div>
