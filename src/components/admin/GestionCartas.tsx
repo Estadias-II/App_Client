@@ -11,8 +11,7 @@ import {
     FaExclamationTriangle,
     FaSync,
     FaImage,
-    FaDollarSign,
-    FaTimes
+    FaDollarSign,    
 } from 'react-icons/fa';
 
 export default function GestionCartas() {
@@ -472,18 +471,6 @@ export default function GestionCartas() {
                                                 >
                                                     {carta.activaVenta ? 'Desactivar' : 'Activar'}
                                                 </button>
-                                                {carta.precioPersonalizado && (
-                                                    <button
-                                                        onClick={() => {
-                                                            setNuevoPrecio('');
-                                                            handleUpdatePrecio(carta.idGestion);
-                                                        }}
-                                                        className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700 transition-colors text-xs"
-                                                        title="Usar precio Scryfall"
-                                                    >
-                                                        <FaTimes />
-                                                    </button>
-                                                )}
                                             </div>
                                         </td>
                                     </tr>
